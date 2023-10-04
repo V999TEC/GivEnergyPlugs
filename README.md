@@ -1,7 +1,7 @@
 # GivEnergy
  Experiments with GivEnergy API for Smart Plugs
 
-Define a property file (such as My.properties) for your smart devices containining alias to uuid mapping, for example:
+Define a property file (such as My.properties) for your smart devices containining your generated api token for smart:devices, for example:
 
 ```
 token=insert_api_token_here
@@ -23,7 +23,7 @@ PlugI=6eec8466-0000-408f-0000-8ddf898f6fa2
 PlugJ=cda12770-0000-4119-0000-1410c9adc54a
 ```
 
-Paste the results into My.properties so that the alias can be used on subsequent requests
+Edit the property file and paste the results so that the alias can be used on subsequent requests
 
 ```
 token=insert_api_token_here
