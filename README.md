@@ -1,13 +1,15 @@
 # GivEnergy
- Experiments with GivEnergy API for Smart Plugs
+## __Experiments with GivEnergy API for Smart Plugs__
 
-Define a property file (such as My.properties) for your smart devices containining your generated api token for smart:devices, for example:
+Define a property file (such as __My.properties__) for your smart devices containining your generated api:smart-device token for example:
 
 ```
 token=insert_api_token_here
 ```
+You can generate a GivEnergy API token for your api:smart-device here https://givenergy.cloud/account-settings/security
 
-Enumerate all the smart devices
+
+Check you API token is good by enumerating all the smart devices as follows
 ```java -jar plugs.jar My.properties```
 
 ```
