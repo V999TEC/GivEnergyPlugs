@@ -202,7 +202,7 @@ public class Plugs {
 
 			if (null != next) {
 
-				Thread.sleep(250L);
+				Thread.sleep(250L); // have sympathy for the API host
 			}
 
 		} while (null != next);
@@ -233,7 +233,7 @@ public class Plugs {
 
 			if (null != next) {
 
-				Thread.sleep(250L);
+				Thread.sleep(250L); // have sympathy for the API host
 			}
 
 		} while (null != next);
