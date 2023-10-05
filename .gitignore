@@ -22,12 +22,6 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
-/bin/
-/target/*
+bin/**
+target/**
 SwindonIcarus.properties
-target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.properties
-target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.xml
-target/maven-archiver/pom.properties
-target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.properties
-target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.xml
-target/maven-archiver/pom.properties
