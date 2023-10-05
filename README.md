@@ -1,12 +1,14 @@
 # GivEnergy
 ## __Experiments with GivEnergy API for Smart Plugs__
 
+### See download folder for wrapper scripts and prebuilt jar
+
 ### Syntax
 
 ```java -jar plugs.jar property_file_name  [alias [from_timestamp [to_timestamp]]]```
 
 ### Usage
-Define a property file (such as __My.properties__) for your smart devices containining your generated api:smart-device token for example:
+Define a property file (such as __My.properties__) for your smart devices containing your generated api:smart-device token for example:
 
 ```
 token=insert_api_token_here
