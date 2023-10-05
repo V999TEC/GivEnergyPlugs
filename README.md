@@ -45,15 +45,16 @@ Analyse consumption for a device with an alias defined in My.properties for the 
 ```
 Device <PlugE>
 From <2023-10-01T05:59:06Z> to <2023-10-01T06:15Z>
-2023-10-01T05:59:06Z	    0.0 watts for    87 seconds	        0.00 watt-seconds (        0.00 accumulated)
-2023-10-01T06:00:33Z	   18.1 watts for    29 seconds	      524.90 watt-seconds (      524.90 accumulated)
-2023-10-01T06:01:02Z	    0.0 watts for    89 seconds	        0.00 watt-seconds (      524.90 accumulated)
-2023-10-01T06:02:31Z	   18.0 watts for    33 seconds	      594.00 watt-seconds (     1118.90 accumulated)
-2023-10-01T06:03:04Z	    0.0 watts for    88 seconds	        0.00 watt-seconds (     1118.90 accumulated)
-2023-10-01T06:04:32Z	   18.1 watts for    31 seconds	      561.10 watt-seconds (     1680.00 accumulated)
-2023-10-01T06:05:03Z	    0.0 watts for    91 seconds	        0.00 watt-seconds (     1680.00 accumulated)
-2023-10-01T06:06:34Z	   17.9 watts for    27 seconds	      483.30 watt-seconds (     2163.30 accumulated)
-1 day(s) from: 06:59 on day 274 to 07:07 on day 274	   0.001 units consumed by PlugE
+2023-10-01T05:59:06Z	    0.0 watts for       87 seconds	        0.00 watt-seconds (        0.00 accumulated)
+2023-10-01T06:00:33Z	   18.1 watts for       29 seconds	      524.90 watt-seconds (      524.90 accumulated)
+2023-10-01T06:01:02Z	    0.0 watts for       89 seconds	        0.00 watt-seconds (      524.90 accumulated)
+2023-10-01T06:02:31Z	   18.0 watts for       33 seconds	      594.00 watt-seconds (     1118.90 accumulated)
+2023-10-01T06:03:04Z	    0.0 watts for       88 seconds	        0.00 watt-seconds (     1118.90 accumulated)
+2023-10-01T06:04:32Z	   18.1 watts for       31 seconds	      561.10 watt-seconds (     1680.00 accumulated)
+2023-10-01T06:05:03Z	    0.0 watts for       91 seconds	        0.00 watt-seconds (     1680.00 accumulated)
+2023-10-01T06:06:34Z	   17.9 watts for       27 seconds	      483.30 watt-seconds (     2163.30 accumulated)
+2023-10-01T06:07:01Z	    0.0 watts for   301959 seconds	        0.00 watt-seconds (     2163.30 accumulated)
+1 day(s) from: 06:59 on day 274 to 07:07 on day 274    0.001 units consumed by PlugE ( 120 secs using power) 
 ```
 
 ### Example 2   
