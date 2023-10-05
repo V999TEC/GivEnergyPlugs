@@ -283,6 +283,8 @@ public class Plugs {
 
 		long epochSecond = 0L;
 
+		long accSeconds = 0L;
+
 		for (int index = size - 1; index > -1; index--) {
 
 			V1TimeAndPower timeAndPower = timeAndPowerList.get(index);
@@ -329,10 +331,14 @@ public class Plugs {
 
 				accWattSeconds += wattSeconds;
 
-				System.out.println(timestamp + "\t" + String.format("%7.1f", power) + " watts for "
-						+ String.format("%5d", elapsedSeconds) + " seconds\t" + String.format("%12.2f", wattSeconds)
-						+ " watt-seconds (" + String.format("%12.2f", accWattSeconds) + " accumulated)");
+				if (wattSeconds > 0) {
 
+					accSeconds += elapsedSeconds;
+				}
+
+				System.out.println(timestamp + "\t" + String.format("%7.1f", power) + " watts for "
+						+ String.format("%8d", elapsedSeconds) + " seconds\t" + String.format("%12.2f", wattSeconds)
+						+ " watt-seconds (" + String.format("%12.2f", accWattSeconds) + " accumulated)");
 			}
 		}
 
@@ -352,8 +358,9 @@ public class Plugs {
 		float kWhr = accWattHours / 1000;
 
 		System.out.println((toDay - fromDay + 1) + " day(s) from: " + ldtLowest.format(formatter24HourClock)
-				+ " on day " + fromDay + " to " + ldtHighest.format(formatter24HourClock) + " on day " + toDay + "\t"
-				+ String.format("%8.3f", kWhr) + " units consumed by " + alias);
+				+ " on day " + fromDay + " to " + ldtHighest.format(formatter24HourClock) + " on day " + toDay + " "
+				+ String.format("%8.3f", kWhr) + " units consumed by " + alias + " ( " + accSeconds
+				+ " secs using power) ");
 
 	}
 

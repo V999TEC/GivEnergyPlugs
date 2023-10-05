@@ -23,5 +23,11 @@
 hs_err_pid*
 replay_pid*
 /bin/
-/target/
+/target/*
 SwindonIcarus.properties
+target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.properties
+target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.xml
+target/maven-archiver/pom.properties
+target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.properties
+target/classes/META-INF/maven/GivEnergy/GivEnergy/pom.xml
+target/maven-archiver/pom.properties
