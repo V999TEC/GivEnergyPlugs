@@ -160,7 +160,43 @@ public class Plugs {
 
 			if (null != alias && properties.containsKey(alias)) {
 
-				processDeviceDataByAlias(alias, from, to);
+				System.out.println("Device <" + alias + ">");
+
+				ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
+
+				if (null == from && null == to) {
+
+					List<V1TimeAndPower> cache = processDeviceDataByAlias(alias, null, null, ourZoneId, null);
+
+					// analyse today, yesterday, past 7 days, past 30 days
+
+					OffsetDateTime now = OffsetDateTime.now();
+
+					OffsetDateTime todayBegin = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+					OffsetDateTime todayEnd = now.withHour(23).withMinute(59).withSecond(59).withNano(0);
+
+					System.out.println("\nToday:");
+					processDeviceDataByAlias(alias, todayBegin, todayEnd, ourZoneId, cache);
+
+					OffsetDateTime yesterdayBegin = todayBegin.minusDays(1);
+
+					System.out.println("\nYesterday:");
+					processDeviceDataByAlias(alias, yesterdayBegin, todayBegin, ourZoneId, cache);
+
+					OffsetDateTime pastSevenDaysBegin = todayBegin.minusDays(7);
+
+					System.out.println("\nPast 7 days:");
+					processDeviceDataByAlias(alias, pastSevenDaysBegin, todayBegin, ourZoneId, cache);
+
+					OffsetDateTime pastThirtyDaysBegin = todayBegin.minusDays(30);
+					System.out.println("\nPast 30 days:");
+
+					processDeviceDataByAlias(alias, pastThirtyDaysBegin, todayBegin, ourZoneId, cache);
+
+				} else {
+
+					processDeviceDataByAlias(alias, from, to, ourZoneId, null);
+				}
 
 			} else {
 
@@ -241,12 +277,12 @@ public class Plugs {
 		return results;
 	}
 
-	private static void processDeviceDataByAlias(String alias, OffsetDateTime from, OffsetDateTime to)
+	private static List<V1TimeAndPower> processDeviceDataByAlias(String alias, OffsetDateTime from, OffsetDateTime to,
+			ZoneId ourZoneId, List<V1TimeAndPower> cache)
+
 			throws MalformedURLException, IOException, InterruptedException {
 
-		System.out.println("Device <" + alias + ">");
-
-		ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
+		boolean allData = null == from && null == to;
 
 		if (null == from) {
 
@@ -258,11 +294,14 @@ public class Plugs {
 			to = OffsetDateTime.now();
 		}
 
-		System.out.println("From <" + from.toString() + "> to <" + to.toString() + ">");
+		if (!allData) {
+
+			System.out.println("From <" + from.toString() + "> to <" + to.toString() + ">");
+		}
 
 		String uuid = properties.getProperty(alias);
 
-		List<V1TimeAndPower> timeAndPowerList = getListOfTimeAndPower(uuid);
+		List<V1TimeAndPower> timeAndPowerList = null == cache ? getListOfTimeAndPower(uuid) : cache;
 
 		long fromEpochSecond = from.toEpochSecond();
 		long toEpochSecond = to.toEpochSecond();
@@ -336,32 +375,46 @@ public class Plugs {
 					accSeconds += elapsedSeconds;
 				}
 
-				System.out.println(timestamp + "\t" + String.format("%7.1f", power) + " watts for "
-						+ String.format("%8d", elapsedSeconds) + " seconds\t" + String.format("%12.2f", wattSeconds)
-						+ " watt-seconds (" + String.format("%12.2f", accWattSeconds) + " accumulated)");
+				if (null == cache && !allData) {
+
+					System.out.println(timestamp + "\t" + String.format("%7.1f", power) + " watts for "
+							+ String.format("%8d", elapsedSeconds) + " seconds\t" + String.format("%12.2f", wattSeconds)
+							+ " watt-seconds (" + String.format("%12.2f", accWattSeconds) + " accumulated)");
+				}
 			}
 		}
 
-		Instant instantLowest = Instant.ofEpochSecond(earliestEpochSecond);
+		if (null == earliestEpochSecond) {
 
-		LocalDateTime ldtLowest = LocalDateTime.ofInstant(instantLowest, ourZoneId);
+			System.out.println("<no data>");
 
-		Instant instantHighest = Instant.ofEpochSecond(latestEpochSecond);
+		} else {
 
-		LocalDateTime ldtHighest = LocalDateTime.ofInstant(instantHighest, ourZoneId);
+			Instant instantLowest = Instant.ofEpochSecond(earliestEpochSecond);
 
-		long fromDay = ldtLowest.get(ChronoField.DAY_OF_YEAR);
-		long toDay = ldtHighest.get(ChronoField.DAY_OF_YEAR);
+			LocalDateTime ldtLowest = LocalDateTime.ofInstant(instantLowest, ourZoneId);
 
-		float accWattHours = accWattSeconds / 3600;
+			Instant instantHighest = Instant.ofEpochSecond(latestEpochSecond);
 
-		float kWhr = accWattHours / 1000;
+			LocalDateTime ldtHighest = LocalDateTime.ofInstant(instantHighest, ourZoneId);
 
-		System.out.println((toDay - fromDay + 1) + " day(s) from: " + ldtLowest.format(formatter24HourClock)
-				+ " on day " + fromDay + " to " + ldtHighest.format(formatter24HourClock) + " on day " + toDay + " "
-				+ String.format("%8.3f", kWhr) + " units consumed by " + alias + " ( " + accSeconds
-				+ " secs using power) ");
+			long fromDay = ldtLowest.get(ChronoField.DAY_OF_YEAR);
+			long toDay = ldtHighest.get(ChronoField.DAY_OF_YEAR);
 
+			float accWattHours = accWattSeconds / 3600;
+
+			float kWhr = accWattHours / 1000;
+
+			if (!allData) {
+
+				System.out.println((toDay - fromDay + 1) + " day(s) from: " + ldtLowest.format(formatter24HourClock)
+						+ " on day " + fromDay + " to " + ldtHighest.format(formatter24HourClock) + " on day " + toDay
+						+ " " + String.format("%8.3f", kWhr) + " units consumed by " + alias + " (" + accSeconds
+						+ " secs using power) ");
+			}
+		}
+
+		return timeAndPowerList;
 	}
 
 	private static V1SmartDeviceData getV1SmartDeviceData(String uuid, Integer page, Integer pageSize)
