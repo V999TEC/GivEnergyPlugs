@@ -63,9 +63,32 @@ Analyse consumption for PlugE from the specified time until now
 ```java -jar plugs.jar My.properties PlugE 2023-10-01T05:59:06Z```
 
 ### Example 3   
-Analyse consumption for PlugE from first available datapoint until now
+Analyse consumption for PlugE for today, yesterday, past 7 days & past 30 days
  
 ```java -jar plugs.jar My.properties PlugE```
 
+```
+Device <PlugE>
 
+Today:
+From <2023-10-06T00:00+01:00> to <2023-10-06T23:59:59+01:00>
+<no data>
+
+Yesterday:
+From <2023-10-05T00:00+01:00> to <2023-10-06T00:00+01:00>
+1 day(s) from: 09:52 on day 278 to 17:52 on day 278    0.178 units consumed by PlugE (2485 secs using power)
+
+Past 7 days:
+From <2023-09-29T00:00+01:00> to <2023-10-06T00:00+01:00>
+7 day(s) from: 01:21 on day 272 to 17:52 on day 278    0.370 units consumed by PlugE (55659 secs using power)
+
+Past 30 days:
+From <2023-09-06T00:00+01:00> to <2023-10-06T00:00+01:00>
+10 day(s) from: 15:26 on day 269 to 17:52 on day 278    3.903 units consumed by PlugE (123466 secs using power)
+```
+
+### Example 4    
+Analyse consumption for PlugE for all datapoints
+ 
+```java -jar plugs.jar My.properties PlugE  1970-01-01T00:00Z```
 
