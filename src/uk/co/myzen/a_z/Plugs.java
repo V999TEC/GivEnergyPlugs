@@ -202,7 +202,11 @@ public class Plugs {
 
 				for (V1SmartDevice smartDevice : getListOfSmartDevice()) {
 
-					System.out.println(smartDevice.getAlias() + "=" + smartDevice.getUuid());
+					String rawAlias = smartDevice.getAlias();
+
+					String key = rawAlias.replace(" ", "\\ ");
+
+					System.out.println(key + "=" + smartDevice.getUuid());
 				}
 			}
 
