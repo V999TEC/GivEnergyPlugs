@@ -1,7 +1,9 @@
 # GivEnergy
 ## __Experiments with GivEnergy API for Smart Plugs__
 
-### See download folder for wrapper scripts and prebuilt jar
+### See download folder for wrapper scripts and latest snapshot prebuilt jar
+Or see https://github.com/V999TEC/GivEnergyPlugs/releases  
+for complete source code & release version of __plugs.jar__
 
 ### Syntax
 
