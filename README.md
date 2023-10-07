@@ -40,6 +40,15 @@ PlugC=bb1c988e-0000-4ad5-0000-53c5a99f5841
 etc
 ```
 
+N.B.
+If the alias name contains spaces, it will be escaped in the properties file.  
+So, for instance, __Washine Machine__ would become __Washing\ Machine=uuid__
+
+Also, when passing parameters containing spaces to the jar, be sure to put them in quotes:
+
+```java -jar plugs.jar My.properties "Washine Machine"```
+
+
 ### Example 1   
 Analyse consumption for a device with an alias defined in My.properties for the specified timespan
  
