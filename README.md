@@ -46,7 +46,7 @@ So, for instance, __Washine Machine__ would become __Washing\ Machine=uuid__
 
 Also, when passing parameters containing spaces to the jar, be sure to put them in quotes:
 
-```java -jar plugs.jar My.properties "Washine Machine"```
+```java -jar plugs.jar My.properties "Washing Machine"```
 
 
 ### Example 1   
