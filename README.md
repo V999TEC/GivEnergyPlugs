@@ -42,7 +42,7 @@ etc
 
 N.B.
 If the alias name contains spaces, it will be escaped in the properties file.  
-So, for instance, __Washine Machine__ would become __Washing\ Machine=uuid__
+So, for instance, __Washing Machine__ would become __Washing\ Machine=uuid__
 
 Also, when passing parameters containing spaces to the jar, be sure to put them in quotes:
 
