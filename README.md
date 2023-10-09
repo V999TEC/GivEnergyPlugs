@@ -13,7 +13,7 @@ for complete source code & release version of __plugs.jar__
 Define a property file (such as __My.properties__) for your smart devices containing your generated api:smart-device token for example:
 
 ```
-api.smart-device=insert_api_token_here
+smart-device=insert_api_token_here
 ```
 You can generate a GivEnergy API token for your api:smart-device here https://givenergy.cloud/account-settings/security
 
@@ -32,7 +32,7 @@ plug\ E=9cc9b483-0000-44ff-0000-1c47395fbc67
 Edit the property file and paste the results so that the alias can be used on subsequent requests
 
 ```
-api.smart-device=insert_api_token_here
+smart-device=insert_api_token_here
 # list the smart device alias and ids 
 PlugA=08f6b4f9-0000-4d41-0000-95214d78e740
 PlugB=aba03ce8-0000-41f9-0000-91876bb0cd45
