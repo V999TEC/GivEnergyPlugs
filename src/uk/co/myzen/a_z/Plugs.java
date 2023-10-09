@@ -212,7 +212,6 @@ public class Plugs {
 //				getV1Account(null, null);
 //
 //				getV1Site(null, null);
-
 			}
 
 		} catch (
@@ -432,7 +431,7 @@ public class Plugs {
 		String json = getRequest(
 				new URL(baseUrl + "/smart-device/" + uuid + "/data?page=" + (null == page ? "1" : String.valueOf(page))
 						+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))),
-				"smart");
+				"smart-device");
 
 		V1SmartDeviceData result = null;
 
@@ -454,7 +453,7 @@ public class Plugs {
 	/* TODO */
 	private static void getV1Site(Integer page, Integer pageSize) throws MalformedURLException, IOException {
 
-		String json = getRequest(new URL(baseUrl + "/site"), "api.site");
+		String json = getRequest(new URL(baseUrl + "/site"), "site");
 
 		System.out.println(json);
 	}
@@ -462,7 +461,7 @@ public class Plugs {
 	/* TODO */
 	private static void getV1Account(Integer page, Integer pageSize) throws MalformedURLException, IOException {
 
-		String json = getRequest(new URL(baseUrl + "/account"), "api.account");
+		String json = getRequest(new URL(baseUrl + "/account"), "account");
 
 		System.out.println(json);
 	}
@@ -471,8 +470,7 @@ public class Plugs {
 			throws MalformedURLException, IOException {
 
 		String json = getRequest(new URL(baseUrl + "/smart-device?page=" + (null == page ? "1" : String.valueOf(page))
-				+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))),
-				"api.smart-device");
+				+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))), "smart-device");
 
 		V1SmartDevices result = null;
 
