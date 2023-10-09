@@ -209,9 +209,9 @@ public class Plugs {
 					System.out.println(key + "=" + smartDevice.getUuid());
 				}
 
-				getV1Account(null, null);
-
-				getV1Site(null, null);
+//				getV1Account(null, null);
+//
+//				getV1Site(null, null);
 
 			}
 
@@ -451,6 +451,7 @@ public class Plugs {
 
 	}
 
+	/* TODO */
 	private static void getV1Site(Integer page, Integer pageSize) throws MalformedURLException, IOException {
 
 		String json = getRequest(new URL(baseUrl + "/site"), "api.site");
@@ -458,30 +459,12 @@ public class Plugs {
 		System.out.println(json);
 	}
 
+	/* TODO */
 	private static void getV1Account(Integer page, Integer pageSize) throws MalformedURLException, IOException {
 
 		String json = getRequest(new URL(baseUrl + "/account"), "api.account");
-//				
-//				?page=" + (null == page ? "1" : String.valueOf(page))
-//				+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))));
-
-//		V1SmartDevices result = null;
-//
-//		if (null == json || 0 == json.trim().length()) {
-//
-//			System.err.println("Error obtaining data. Check the token in property file!");
-//
-//			result = new V1SmartDevices(); // empty object
-//
-//		} else {
-//
-//			result = mapper.readValue(json, V1SmartDevices.class);
-//		}
-//
-//		return result;
 
 		System.out.println(json);
-
 	}
 
 	private static V1SmartDevices getV1SmartDevices(Integer page, Integer pageSize)
