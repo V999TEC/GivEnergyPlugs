@@ -208,6 +208,11 @@ public class Plugs {
 
 					System.out.println(key + "=" + smartDevice.getUuid());
 				}
+
+				getV1Account(null, null);
+
+				getV1Site(null, null);
+
 			}
 
 		} catch (
@@ -426,7 +431,8 @@ public class Plugs {
 
 		String json = getRequest(
 				new URL(baseUrl + "/smart-device/" + uuid + "/data?page=" + (null == page ? "1" : String.valueOf(page))
-						+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))));
+						+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))),
+				"smart");
 
 		V1SmartDeviceData result = null;
 
@@ -445,11 +451,45 @@ public class Plugs {
 
 	}
 
+	private static void getV1Site(Integer page, Integer pageSize) throws MalformedURLException, IOException {
+
+		String json = getRequest(new URL(baseUrl + "/site"), "api.site");
+
+		System.out.println(json);
+	}
+
+	private static void getV1Account(Integer page, Integer pageSize) throws MalformedURLException, IOException {
+
+		String json = getRequest(new URL(baseUrl + "/account"), "api.account");
+//				
+//				?page=" + (null == page ? "1" : String.valueOf(page))
+//				+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))));
+
+//		V1SmartDevices result = null;
+//
+//		if (null == json || 0 == json.trim().length()) {
+//
+//			System.err.println("Error obtaining data. Check the token in property file!");
+//
+//			result = new V1SmartDevices(); // empty object
+//
+//		} else {
+//
+//			result = mapper.readValue(json, V1SmartDevices.class);
+//		}
+//
+//		return result;
+
+		System.out.println(json);
+
+	}
+
 	private static V1SmartDevices getV1SmartDevices(Integer page, Integer pageSize)
 			throws MalformedURLException, IOException {
 
 		String json = getRequest(new URL(baseUrl + "/smart-device?page=" + (null == page ? "1" : String.valueOf(page))
-				+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))));
+				+ "&pageSize=" + (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))),
+				"api.smart-device");
 
 		V1SmartDevices result = null;
 
@@ -468,12 +508,12 @@ public class Plugs {
 
 	}
 
-	private static String getRequest(URL url) throws IOException {
+	private static String getRequest(URL url, String tokenKey) throws IOException {
 
-		return getRequest(url, true);
+		return getRequest(url, true, tokenKey);
 	}
 
-	private static String getRequest(URL url, boolean authorisationRequired) throws IOException {
+	private static String getRequest(URL url, boolean authorisationRequired, String tokenKey) throws IOException {
 
 		int status = 0;
 
@@ -487,7 +527,7 @@ public class Plugs {
 
 		if (authorisationRequired) {
 
-			con.setRequestProperty("Authorization", "Bearer " + properties.getProperty("token"));
+			con.setRequestProperty("Authorization", "Bearer " + properties.getProperty(tokenKey));
 		}
 
 		try {
