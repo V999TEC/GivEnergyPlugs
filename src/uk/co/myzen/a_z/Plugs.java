@@ -417,7 +417,7 @@ public class Plugs {
 
 				System.out.println((toDay - fromDay + 1) + " day(s) from: " + ldtLowest.format(formatter24HourClock)
 						+ " on day " + fromDay + " to " + ldtHighest.format(formatter24HourClock) + " on day " + toDay
-						+ " " + String.format("%8.3f", kWhr) + " units consumed by " + alias + " (" + accSeconds
+						+ " " + String.format("%8.3f", kWhr) + " kWhr consumed by " + alias + " (" + accSeconds
 						+ " secs using power) ");
 			}
 		}
