@@ -1,8 +1,11 @@
 package uk.co.myzen.a_z;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -164,9 +167,142 @@ public class Plugs {
 
 				ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
 
-				if (null == from && null == to) {
+				List<V1TimeAndPower> cacheNewestFirst = null;
 
-					List<V1TimeAndPower> cache = processDeviceDataByAlias(alias, null, null, ourZoneId, null);
+				String uuid = properties.getProperty(alias);
+
+				String cacheName = uuid + ".tmp";
+
+				V1SmartDeviceData data = null;
+
+				List<V1TimeAndPower> cacheOldestFirst = new ArrayList<V1TimeAndPower>();
+
+				File fileCache = new File(cacheName);
+
+				if (fileCache.exists()) {
+
+					// if the file exists assume it has data starting at the oldest available
+					// chronologically
+					// but it won't necessarily have the latest available data
+
+					BufferedReader br = new BufferedReader(new FileReader(fileCache));
+
+					String line = null;
+
+					while (null != (line = br.readLine())) {
+
+						String[] fields = line.split(" ");
+
+						V1TimeAndPower entry = new V1TimeAndPower();
+
+						entry.setTime(fields[0]);
+
+						entry.setPower("null".equals(fields[1]) ? null : Float.valueOf(fields[1]));
+
+						cacheOldestFirst.add(entry);
+					}
+
+					br.close();
+
+					// find youngest entry
+
+					V1TimeAndPower timeAndPowerYoungest = cacheOldestFirst.get(cacheOldestFirst.size() - 1);
+
+					OffsetDateTime odtYoungest = OffsetDateTime.parse(timeAndPowerYoungest.getTime(),
+							defaultDateTimeFormatter);
+
+					// now via GE API get recent data page by page adding noting anything that is
+					// newer than our existing cacheOldestFirst
+
+					List<V1TimeAndPower> recent = new ArrayList<V1TimeAndPower>();
+
+					boolean done = false;
+
+					Integer page = 0;
+
+					do {
+
+						page++;
+
+						V1SmartDeviceData sample = getV1SmartDeviceData(uuid, page, pageSize);
+
+						List<V1TimeAndPower> testList = sample.getTimeAndPower();
+
+						for (V1TimeAndPower test : testList) {
+
+							OffsetDateTime odtTest = OffsetDateTime.parse(test.getTime(), defaultDateTimeFormatter);
+
+							if (odtTest.isAfter(odtYoungest)) {
+
+								recent.add(0, test); // put each successive older item at the start of list so the
+								// latest remains in highest element
+
+							} else {
+
+								// we have found enough new entries to add to the cache
+
+								done = true;
+								break;
+							}
+						}
+
+						if (sample.getMeta().getLastPage() == page) {
+
+							done = true;
+						}
+
+					} while (!done);
+
+					cacheOldestFirst.addAll(recent);
+
+					// append to fileCache just the recent stuff
+
+					FileWriter fw = new FileWriter(fileCache, true);
+
+					BufferedWriter bw = new BufferedWriter(fw);
+
+					for (V1TimeAndPower entry : recent) {
+
+						bw.append(entry.getTime());
+						bw.append(" ");
+						bw.append(String.valueOf(entry.getPower()));
+						bw.append("\n");
+					}
+
+					bw.close();
+					fw.close();
+
+					// now reverse the cache to match the ordering returned by the GE API
+
+					cacheNewestFirst = reverse(cacheOldestFirst);
+
+				} else {
+
+					data = new V1SmartDeviceData();
+
+					cacheNewestFirst = processDeviceDataByAlias(alias, null, null, ourZoneId, null, true);
+
+					data.setTimeAndPower(cacheNewestFirst);
+
+					cacheOldestFirst = reverse(cacheNewestFirst);
+
+					FileWriter fw = new FileWriter(fileCache, true);
+
+					BufferedWriter bw = new BufferedWriter(fw);
+
+					for (V1TimeAndPower entry : cacheOldestFirst) {
+
+						bw.append(entry.getTime());
+						bw.append(" ");
+						bw.append(String.valueOf(entry.getPower()));
+						bw.append("\n");
+					}
+
+					bw.close();
+					fw.close();
+				}
+
+				if (null == from && null == to) {
 
 					// analyse today, yesterday, past 7 days, past 30 days
 
@@ -176,26 +312,26 @@ public class Plugs {
 					OffsetDateTime todayEnd = now.withHour(23).withMinute(59).withSecond(59).withNano(0);
 
 					System.out.println("\nToday:");
-					processDeviceDataByAlias(alias, todayBegin, todayEnd, ourZoneId, cache);
+					processDeviceDataByAlias(alias, todayBegin, todayEnd, ourZoneId, cacheNewestFirst, true);
 
 					OffsetDateTime yesterdayBegin = todayBegin.minusDays(1);
 
 					System.out.println("\nYesterday:");
-					processDeviceDataByAlias(alias, yesterdayBegin, todayBegin, ourZoneId, cache);
+					processDeviceDataByAlias(alias, yesterdayBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
 
 					OffsetDateTime pastSevenDaysBegin = todayBegin.minusDays(7);
 
 					System.out.println("\nPast 7 days:");
-					processDeviceDataByAlias(alias, pastSevenDaysBegin, todayBegin, ourZoneId, cache);
+					processDeviceDataByAlias(alias, pastSevenDaysBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
 
 					OffsetDateTime pastThirtyDaysBegin = todayBegin.minusDays(30);
 					System.out.println("\nPast 30 days:");
 
-					processDeviceDataByAlias(alias, pastThirtyDaysBegin, todayBegin, ourZoneId, cache);
+					processDeviceDataByAlias(alias, pastThirtyDaysBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
 
 				} else {
 
-					processDeviceDataByAlias(alias, from, to, ourZoneId, null);
+					processDeviceDataByAlias(alias, from, to, ourZoneId, cacheNewestFirst, false);
 				}
 
 			} else {
@@ -221,6 +357,20 @@ public class Plugs {
 			e.printStackTrace();
 
 		}
+	}
+
+	private static List<V1TimeAndPower> reverse(List<V1TimeAndPower> timeAndPowerList) {
+
+		List<V1TimeAndPower> result = new ArrayList<V1TimeAndPower>();
+
+		final int size = timeAndPowerList.size();
+
+		for (int index = size - 1; index > -1; index--) {
+
+			result.add(timeAndPowerList.get(index));
+		}
+
+		return result;
 	}
 
 	private static List<V1SmartDevice> getListOfSmartDevice()
@@ -286,11 +436,9 @@ public class Plugs {
 	}
 
 	private static List<V1TimeAndPower> processDeviceDataByAlias(String alias, OffsetDateTime from, OffsetDateTime to,
-			ZoneId ourZoneId, List<V1TimeAndPower> cache)
+			ZoneId ourZoneId, List<V1TimeAndPower> cache, boolean summaryOnly)
 
 			throws MalformedURLException, IOException, InterruptedException {
-
-		boolean allData = null == from && null == to;
 
 		if (null == from) {
 
@@ -302,7 +450,7 @@ public class Plugs {
 			to = OffsetDateTime.now();
 		}
 
-		if (!allData) {
+		if (!summaryOnly) {
 
 			System.out.println("From <" + from.toString() + "> to <" + to.toString() + ">");
 		}
@@ -383,7 +531,7 @@ public class Plugs {
 					accSeconds += elapsedSeconds;
 				}
 
-				if (null == cache && !allData) {
+				if (!summaryOnly) {
 
 					System.out.println(timestamp + "\t" + String.format("%7.1f", power) + " watts for "
 							+ String.format("%8d", elapsedSeconds) + " seconds\t" + String.format("%12.2f", wattSeconds)
@@ -413,13 +561,14 @@ public class Plugs {
 
 			float kWhr = accWattHours / 1000;
 
-			if (!allData) {
+			if (null != cache) {
 
 				System.out.println((toDay - fromDay + 1) + " day(s) from: " + ldtLowest.format(formatter24HourClock)
 						+ " on day " + fromDay + " to " + ldtHighest.format(formatter24HourClock) + " on day " + toDay
 						+ " " + String.format("%8.3f", kWhr) + " kWhr consumed by " + alias + " (" + accSeconds
 						+ " secs using power) ");
 			}
+
 		}
 
 		return timeAndPowerList;
