@@ -1,6 +1,8 @@
 # GivEnergy
 ## __Experiments with GivEnergy API for Smart Plugs__
 
+Latest snapshot in downloads has a useful performance improvement by creating a local cache of the smart plug datapoints in uuid.tmp 
+
 ### See download folder for wrapper scripts and latest snapshot prebuilt jar
 Or see https://github.com/V999TEC/GivEnergyPlugs/releases  
 for complete source code & release version of __plugs.jar__
