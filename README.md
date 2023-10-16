@@ -1,7 +1,14 @@
 # GivEnergy
 ## __Experiments with GivEnergy API for Smart Plugs__
 
-Latest snapshot plugs.jar in /download/ or choose release version
+The main problem with the GE API to GET datapoints for a smart-device is that it does not currently support a 'from' or 'to'  date/time range.
+For the client application it means that potentially several pages needs to be scanned until the required time range is covered.
+
+This java code creates a cache in uuid.tmp which reflects the timestamp and power readings for each datapoint.
+Subsequent requests will maintain the cache while minimising the traffic needed against the GE API for smart plugs.
+
+
+Latest snapshot plugs.jar in __/download/__ or choose release version
 
 ### See download folder for wrapper scripts and latest snapshot prebuilt jar
 Or see https://github.com/V999TEC/GivEnergyPlugs/releases  
