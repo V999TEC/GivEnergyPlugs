@@ -182,8 +182,7 @@ public class Plugs {
 				if (fileCache.exists()) {
 
 					// if the file exists assume it has data starting at the oldest available
-					// chronologically
-					// but it won't necessarily have the latest available data
+					// chronologically but it won't necessarily have the latest available data
 
 					BufferedReader br = new BufferedReader(new FileReader(fileCache));
 
@@ -212,7 +211,8 @@ public class Plugs {
 							defaultDateTimeFormatter);
 
 					// now via GE API get recent data page by page adding noting anything that is
-					// newer than our existing cacheOldestFirst
+					// newer than our existing cacheOldestFirst because that won't be in our disk
+					// cache
 
 					List<V1TimeAndPower> recent = new ArrayList<V1TimeAndPower>();
 
@@ -253,6 +253,8 @@ public class Plugs {
 
 					} while (!done);
 
+					// update the cache with the recent data
+
 					cacheOldestFirst.addAll(recent);
 
 					// append to fileCache just the recent stuff
@@ -278,11 +280,18 @@ public class Plugs {
 
 				} else {
 
-					data = new V1SmartDeviceData();
+					// we don't have a cache file for this uuid
+					// get all available datapoints
+					// the GE API returns the data newest first/ oldest last
 
 					cacheNewestFirst = processDeviceDataByAlias(alias, null, null, ourZoneId, null, true);
 
+					data = new V1SmartDeviceData();
+
 					data.setTimeAndPower(cacheNewestFirst);
+
+					// we store the datapoint cache on disk with newest last deliberately
+					// so that we an update it next time with an append mode
 
 					cacheOldestFirst = reverse(cacheNewestFirst);
 
@@ -344,10 +353,6 @@ public class Plugs {
 
 					System.out.println(key + "=" + smartDevice.getUuid());
 				}
-
-//				getV1Account(null, null);
-//
-//				getV1Site(null, null);
 			}
 
 		} catch (
@@ -599,21 +604,21 @@ public class Plugs {
 
 	}
 
-	/* TODO */
-	private static void getV1Site(Integer page, Integer pageSize) throws MalformedURLException, IOException {
-
-		String json = getRequest(new URL(baseUrl + "/site"), "site");
-
-		System.out.println(json);
-	}
-
-	/* TODO */
-	private static void getV1Account(Integer page, Integer pageSize) throws MalformedURLException, IOException {
-
-		String json = getRequest(new URL(baseUrl + "/account"), "account");
-
-		System.out.println(json);
-	}
+//	/* TODO */
+//	private static void getV1Site(Integer page, Integer pageSize) throws MalformedURLException, IOException {
+//
+//		String json = getRequest(new URL(baseUrl + "/site"), "site");
+//
+//		System.out.println(json);
+//	}
+//
+//	/* TODO */
+//	private static void getV1Account(Integer page, Integer pageSize) throws MalformedURLException, IOException {
+//
+//		String json = getRequest(new URL(baseUrl + "/account"), "account");
+//
+//		System.out.println(json);
+//	}
 
 	private static V1SmartDevices getV1SmartDevices(Integer page, Integer pageSize)
 			throws MalformedURLException, IOException {
