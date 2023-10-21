@@ -55,6 +55,8 @@ public class Plugs {
 
 	private static ObjectMapper mapper;
 
+	private static String propertyFileName = DEFAULT_PROPERTY_FILENAME;
+
 	private static boolean loadProperties(File externalPropertyFile) throws Exception {
 
 		boolean external = false;
@@ -91,8 +93,6 @@ public class Plugs {
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 //		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		mapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-		String propertyFileName = DEFAULT_PROPERTY_FILENAME;
 
 		try {
 
@@ -163,7 +163,7 @@ public class Plugs {
 
 			if (null != alias && properties.containsKey(alias)) {
 
-				System.out.println("Device <" + alias + ">");
+//				System.out.println("Device <" + alias + ">");
 
 				ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
 
@@ -457,7 +457,7 @@ public class Plugs {
 
 		if (!summaryOnly) {
 
-			System.out.println("From <" + from.toString() + "> to <" + to.toString() + ">");
+			System.out.println(propertyFileName + " \"" + alias + "\" " + from.toString() + " " + to.toString());
 		}
 
 		String uuid = properties.getProperty(alias);
@@ -538,9 +538,10 @@ public class Plugs {
 
 				if (!summaryOnly) {
 
-					System.out.println(timestamp + "\t" + String.format("%7.1f", power) + " watts for "
-							+ String.format("%8d", elapsedSeconds) + " seconds\t" + String.format("%12.2f", wattSeconds)
-							+ " watt-seconds (" + String.format("%12.2f", accWattSeconds) + " accumulated)");
+					System.out.println(timestamp + "\t" + String.format("%7.1f", power) + "\twatts for\t"
+							+ String.format("%8d", elapsedSeconds) + "\tseconds\t"
+							+ String.format("%12.2f", wattSeconds) + " watt-seconds ("
+							+ String.format("%12.2f", accWattSeconds) + " accumulated)");
 				}
 			}
 		}
