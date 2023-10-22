@@ -1,6 +1,8 @@
 # GivEnergy
 ## __Experiments with GivEnergy API for Smart Plugs__
 
+There is a wiki giving context about this project here https://github.com/V999TEC/GivEnergyPlugs/wiki/The-Home-of-Icarus  
+
 The main problem with the GE API to GET datapoints for a smart-device is that it does not currently support a 'from' or 'to'  date/time range.
 For the client application it means that potentially several pages needs to be scanned until the required time range is covered.
 
