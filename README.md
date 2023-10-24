@@ -76,7 +76,7 @@ From <2023-10-01T05:59:06Z> to <2023-10-01T06:15Z>
 2023-10-01T06:05:03Z	    0.0 watts for       91 seconds	        0.00 watt-seconds (     1680.00 accumulated)
 2023-10-01T06:06:34Z	   17.9 watts for       27 seconds	      483.30 watt-seconds (     2163.30 accumulated)
 2023-10-01T06:07:01Z	    0.0 watts for   301959 seconds	        0.00 watt-seconds (     2163.30 accumulated)
-1 day(s) from: 06:59 on day 274 to 07:07 on day 274    0.001 units consumed by plug E ( 120 secs using power) 
+1 day(s) from: 06:59 on day 274 to 07:07 on day 274    0.001 units consumed via plug E ( 120 secs using power) 
 ```
 
 ### Example 2   
@@ -98,15 +98,15 @@ From <2023-10-06T00:00+01:00> to <2023-10-06T23:59:59+01:00>
 
 Yesterday:
 From <2023-10-05T00:00+01:00> to <2023-10-06T00:00+01:00>
-1 day(s) from: 09:52 on day 278 to 17:52 on day 278    0.178 units consumed by plug E (2485 secs using power)
+1 day(s) from: 09:52 on day 278 to 17:52 on day 278    0.178 units consumed via plug E (2485 secs using power)
 
 Past 7 days:
 From <2023-09-29T00:00+01:00> to <2023-10-06T00:00+01:00>
-7 day(s) from: 01:21 on day 272 to 17:52 on day 278    0.370 units consumed by plug E (55659 secs using power)
+7 day(s) from: 01:21 on day 272 to 17:52 on day 278    0.370 units consumed via plug E (55659 secs using power)
 
 Past 30 days:
 From <2023-09-06T00:00+01:00> to <2023-10-06T00:00+01:00>
-10 day(s) from: 15:26 on day 269 to 17:52 on day 278    3.903 units consumed by plug E (123466 secs using power)
+10 day(s) from: 15:26 on day 269 to 17:52 on day 278    3.903 units consumed via plug E (123466 secs using power)
 ```
 
 ### Example 4    
