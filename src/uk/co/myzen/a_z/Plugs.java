@@ -22,10 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import v1.V1DataDescriptor;
+import v1.V1DataSystem;
 import v1.V1Links;
 import v1.V1SmartDevice;
 import v1.V1SmartDeviceData;
@@ -33,6 +36,9 @@ import v1.V1SmartDevices;
 import v1.V1TimeAndPower;
 
 public class Plugs {
+
+	@SuppressWarnings("unused")
+	private static final String docsUrl = "https://api.givenergy.cloud/docs/api/v1";
 
 	private static final String baseUrl = "https://api.givenergy.cloud/v1";
 
@@ -124,32 +130,35 @@ public class Plugs {
 
 					if (args.length > 2) {
 
-						// the optional 3rd parameter should be a 'from' date which represents the
-						// oldest timestamp we want to filter on
-						// if not specified assume the start of epoch (1970)
+						if (0 != "inverter".compareTo(alias)) {
 
-						p2 = args[2].trim();
+							// the optional 3rd parameter should be a 'from' date which represents the
+							// oldest timestamp we want to filter on
+							// if not specified assume the start of epoch (1970)
 
-						from = OffsetDateTime.parse(p2, defaultDateTimeFormatter);
+							p2 = args[2].trim();
 
-						// the optional 4th parameter should be a 'to' date which represents the latest
-						// timestamp we want to filter on
-						// if not specified assume the time 'now'
+							from = OffsetDateTime.parse(p2, defaultDateTimeFormatter);
 
-						if (args.length > 3) {
+							// the optional 4th parameter should be a 'to' date which represents the latest
+							// timestamp we want to filter on
+							// if not specified assume the time 'now'
 
-							p3 = args[3].trim();
+							if (args.length > 3) {
 
-							to = OffsetDateTime.parse(p3, defaultDateTimeFormatter);
+								p3 = args[3].trim();
 
-							// the optional 5th parameter is just to adjust performance
-							// it will increase the number of page requests by adjusting pageSize
+								to = OffsetDateTime.parse(p3, defaultDateTimeFormatter);
 
-							if (args.length > 4) {
+								// the optional 5th parameter is just to adjust performance
+								// it will increase the number of page requests by adjusting pageSize
 
-								p4 = args[4].trim();
+								if (args.length > 4) {
 
-								pageSize = Integer.parseInt(p4);
+									p4 = args[4].trim();
+
+									pageSize = Integer.parseInt(p4);
+								}
 							}
 						}
 					}
@@ -160,6 +169,38 @@ public class Plugs {
 			File externalProperties = new File(propertyFileName);
 
 			loadProperties(externalProperties);
+
+			if (0 == "inverter".compareTo(alias)) {
+
+				// assume we are requesting details of an inverter
+
+				if (2 == args.length) {
+
+					// default - no further parameters
+
+					V1DataSystem dataSystem = getV1InverterSystem();
+
+					renderInverterSystem(dataSystem);
+
+				} else if (3 == args.length) {
+
+					if ("presets".equalsIgnoreCase(args[2])) {
+
+						V1DataDescriptor v1Data = getV1InverterPresets(1, 50);
+
+						renderInverterPresets(v1Data);
+
+					} else if ("system".equalsIgnoreCase(args[2])) {
+
+						V1DataSystem dataSystem = getV1InverterSystem();
+
+						renderInverterSystem(dataSystem);
+
+					}
+				}
+
+				System.exit(0);
+			}
 
 			if (null != alias && properties.containsKey(alias)) {
 
@@ -644,6 +685,52 @@ public class Plugs {
 
 	}
 
+	private static V1DataDescriptor getV1InverterPresets(Integer page, Integer pageSize)
+			throws MalformedURLException, IOException {
+
+		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/presets?page="
+				+ (null == page ? "1" : String.valueOf(page)) + "&pageSize="
+				+ (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))), "inverter");
+
+		V1DataDescriptor result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataDescriptor(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataDescriptor.class);
+		}
+
+		return result;
+
+	}
+
+	private static V1DataSystem getV1InverterSystem() throws MalformedURLException, IOException {
+
+		String json = getRequest(
+				new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/system-data/latest"), "inverter");
+
+		V1DataSystem result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataSystem(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataSystem.class);
+		}
+
+		return result;
+
+	}
+
 	private static String getRequest(URL url, String tokenKey) throws IOException {
 
 		return getRequest(url, true, tokenKey);
@@ -716,4 +803,17 @@ public class Plugs {
 		return json;
 	}
 
+	private static void renderInverterPresets(V1DataDescriptor v1Data) throws JsonProcessingException {
+
+		String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(v1Data);
+
+		System.out.println(json);
+	}
+
+	private static void renderInverterSystem(V1DataSystem v1DataSystem) throws JsonProcessingException {
+
+		String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(v1DataSystem);
+
+		System.out.println(json);
+	}
 }
