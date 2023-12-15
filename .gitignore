@@ -26,3 +26,4 @@ replay_pid*
 bin/**
 target/**
 SwindonIcarus.properties
+plugs.jar
