@@ -9,8 +9,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -27,7 +29,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import v1.V1DataBooleanValue;
 import v1.V1DataDescriptor;
+import v1.V1DataIntegerValue;
+import v1.V1DataSettings;
+import v1.V1DataStringValue;
 import v1.V1DataSystem;
 import v1.V1Links;
 import v1.V1SmartDevice;
@@ -44,6 +50,7 @@ public class Plugs {
 
 	private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36";
 	private static final String contentType = "application/json";
+	private static final String accept = "application/json";
 
 	private static final String DEFAULT_PROPERTY_FILENAME = "./givenergy.properties";
 
@@ -130,7 +137,7 @@ public class Plugs {
 
 					if (args.length > 2) {
 
-						if (0 != "inverter".compareTo(alias)) {
+						if (null != alias && 0 != "inverter".compareTo(alias)) {
 
 							// the optional 3rd parameter should be a 'from' date which represents the
 							// oldest timestamp we want to filter on
@@ -170,7 +177,7 @@ public class Plugs {
 
 			loadProperties(externalProperties);
 
-			if (0 == "inverter".compareTo(alias)) {
+			if (null != alias && 0 == "inverter".compareTo(alias)) {
 
 				// assume we are requesting details of an inverter
 
@@ -180,22 +187,117 @@ public class Plugs {
 
 					V1DataSystem dataSystem = getV1InverterSystem();
 
-					renderInverterSystem(dataSystem);
+					renderInverterValue(dataSystem);
 
-				} else if (3 == args.length) {
+				} else if (args.length > 2) {
 
 					if ("presets".equalsIgnoreCase(args[2])) {
 
 						V1DataDescriptor v1Data = getV1InverterPresets(1, 50);
 
-						renderInverterPresets(v1Data);
+						renderInverterValue(v1Data);
 
 					} else if ("system".equalsIgnoreCase(args[2])) {
 
 						V1DataSystem dataSystem = getV1InverterSystem();
 
-						renderInverterSystem(dataSystem);
+						renderInverterValue(dataSystem);
 
+					} else if ("settings".equalsIgnoreCase(args[2])) {
+
+						V1DataSettings dataSettings = getV1InverterSettings();
+
+						renderInverterValue(dataSettings);
+
+					} else if ("macro".equalsIgnoreCase(args[2])) {
+
+						if ("A".equalsIgnoreCase(args[3]) && 7 == args.length) {
+
+							// macro A HH:mm HH:mm 0-6000
+							// set start time, end time and power of timed battery charge
+
+							postV1InverterSettingWriteString(64, args[4]);
+							postV1InverterSettingWriteString(65, args[5]);
+							postV1InverterSettingWrite(72, Integer.parseInt(args[6]));
+						}
+
+					} else if ("setting".equalsIgnoreCase(args[2])) {
+
+						// function A is setting start and end time for battery charging
+						// with rate up to 6000
+
+						if (args.length > 4) {
+
+							Integer id = Integer.parseInt(args[4]);
+
+							if ("read".equalsIgnoreCase(args[3])) {
+
+								System.out.println("read setting with id:" + id);
+
+								Object value = null;
+
+								switch (id) {
+
+								case 17: // Enable AC Charge Upper % Limit
+
+									value = postV1InverterSettingReadBoolean(id);
+									break;
+
+								case 64: // AC Charge 1 Start Time
+								case 65: // AC Charge 1 End Time
+								case 265: // Export Power Priority
+									value = postV1InverterSettingReadString(id);
+									break;
+
+								case 72: // Battery Charge Power
+								case 73: // Battery Discharge Power
+								default:
+									value = postV1InverterSettingReadInteger(id);
+									break;
+								}
+
+								System.out.println("response is: ");
+
+								renderInverterValue(value);
+
+							} else if ("write".equalsIgnoreCase(args[3]) && args.length > 5) {
+
+								System.out.println("write setting with id:" + id + " new value:" + args[5]);
+
+								Object value = null;
+
+								switch (id) {
+								case 17: // Enable AC Charge Upper % Limit
+
+									Boolean bool = Boolean.parseBoolean(args[5]);
+
+									value = postV1InverterSettingWriteBoolean(id, bool);
+									break;
+
+								case 64: // AC Charge 1 Start Time
+								case 65: // AC Charge 1 End Time
+								case 265: // Export Power Priority
+
+									String string = args[5];
+
+									value = postV1InverterSettingWriteString(id, string);
+									break;
+
+								case 72: // Battery Charge Power
+								case 73: // Battery Discharge Power
+
+								default:
+									Integer integer = Integer.parseInt(args[5]);
+
+									value = postV1InverterSettingWrite(id, integer);
+									break;
+								}
+
+								System.out.println("response is: ");
+
+								renderInverterValue(value);
+							}
+						}
 					}
 				}
 
@@ -685,6 +787,180 @@ public class Plugs {
 
 	}
 
+	// postV1InverterSettingReadBoolean
+
+	private static V1DataBooleanValue postV1InverterSettingReadBoolean(int id)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		String body = "{\"context\": \"consequatur\"}";
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+				+ String.valueOf(id) + "/read"), "inverter", body);
+
+		V1DataBooleanValue result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataBooleanValue(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataBooleanValue.class);
+		}
+
+		return result;
+	}
+
+	private static V1DataIntegerValue postV1InverterSettingReadInteger(int id)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		String body = "{\"context\": \"consequatur\"}";
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+				+ String.valueOf(id) + "/read"), "inverter", body);
+
+		V1DataIntegerValue result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataIntegerValue(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataIntegerValue.class);
+		}
+
+		return result;
+	}
+
+	private static V1DataStringValue postV1InverterSettingReadString(int id)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		String body = "{\"context\": \"consequatur\"}";
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+				+ String.valueOf(id) + "/read"), "inverter", body);
+
+		V1DataStringValue result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataStringValue(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataStringValue.class);
+		}
+
+		return result;
+	}
+
+	// postV1InverterSettingWrite
+	private static V1DataIntegerValue postV1InverterSettingWrite(int id, Integer value)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+//		String body = "{\"data\": {\"value\": \"" + value + "\"}}";
+
+		String body = "{\"value\": " + value + "}";
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+				+ String.valueOf(id) + "/write"), "inverter", body);
+
+		V1DataIntegerValue result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataIntegerValue(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataIntegerValue.class);
+		}
+
+		return result;
+
+	}
+
+	private static V1DataStringValue postV1InverterSettingWriteString(int id, String value)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		String body = "{\"value\": \"" + value + "\"}";
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+				+ String.valueOf(id) + "/write"), "inverter", body);
+
+		V1DataStringValue result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataStringValue(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataStringValue.class);
+		}
+
+		return result;
+
+	}
+
+	private static V1DataBooleanValue postV1InverterSettingWriteBoolean(int id, Boolean value)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		String body = "{\"value\": " + value + "}";
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+				+ String.valueOf(id) + "/write"), "inverter", body);
+
+		V1DataBooleanValue result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataBooleanValue(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataBooleanValue.class);
+		}
+
+		return result;
+
+	}
+
+	private static V1DataSettings getV1InverterSettings() throws MalformedURLException, IOException {
+
+		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings"),
+				"inverter");
+
+		V1DataSettings result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataSettings(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataSettings.class);
+		}
+
+		return result;
+
+	}
+
 	private static V1DataDescriptor getV1InverterPresets(Integer page, Integer pageSize)
 			throws MalformedURLException, IOException {
 
@@ -736,6 +1012,11 @@ public class Plugs {
 		return getRequest(url, true, tokenKey);
 	}
 
+	private static String postRequest(URL url, String tokenKey, String body) throws IOException, URISyntaxException {
+
+		return postRequest(url, true, tokenKey, body);
+	}
+
 	private static String getRequest(URL url, boolean authorisationRequired, String tokenKey) throws IOException {
 
 		int status = 0;
@@ -743,10 +1024,11 @@ public class Plugs {
 		HttpURLConnection con = null;
 
 		con = (HttpURLConnection) url.openConnection();
-		con.setRequestMethod("GET");
 
 		con.setRequestProperty("Content-Type", contentType);
 		con.setRequestProperty("user-agent", userAgent);
+
+		con.setRequestMethod("GET");
 
 		if (authorisationRequired) {
 
@@ -793,6 +1075,10 @@ public class Plugs {
 
 				in.close();
 			}
+
+		} else {
+
+			System.err.println("HTTP Status: " + status);
 		}
 
 		if (null != con) {
@@ -803,17 +1089,91 @@ public class Plugs {
 		return json;
 	}
 
-	private static void renderInverterPresets(V1DataDescriptor v1Data) throws JsonProcessingException {
+	private static String postRequest(URL url, boolean authorisationRequired, String tokenKey, String body)
+			throws IOException {
 
-		String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(v1Data);
+		int status = 0;
+
+		HttpURLConnection con = null;
+
+		con = (HttpURLConnection) url.openConnection();
+
+		con.setRequestProperty("Content-Type", contentType);
+//		con.setRequestProperty("user-agent", userAgent);
+
+		if (authorisationRequired) {
+
+			con.setRequestProperty("Authorization", "Bearer " + properties.getProperty(tokenKey));
+		}
+
+		con.setRequestMethod("POST");
+
+		con.setRequestProperty("Accept", accept);
+
+		con.setDoOutput(true);
+		OutputStream os = con.getOutputStream();
+		os.write(body.getBytes());
+		os.flush();
+		os.close();
+
+		try {
+			con.connect();
+
+			status = con.getResponseCode();
+
+		} catch (java.net.SocketException e) {
+
+			System.err.println("API not available temporarily.  Please try again.");
+			System.exit(-1);
+		}
+
+		String json = "";
+
+		if (200 == status || 201 == status) {
+
+			BufferedReader in = null;
+
+			try {
+
+				in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+
+				String inputLine;
+				StringBuffer content = new StringBuffer();
+
+				while ((inputLine = in.readLine()) != null) {
+
+					content.append(inputLine);
+				}
+
+				json = content.toString();
+
+			} catch (IOException e) {
+
+				e.printStackTrace();
+			}
+
+			if (null != in) {
+
+				in.close();
+			}
+		} else {
+
+			System.err.println("HTTP Status: " + status);
+		}
+
+		if (null != con) {
+
+			con.disconnect();
+		}
+
+		return json;
+	}
+
+	private static void renderInverterValue(Object value) throws JsonProcessingException {
+
+		String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
 
 		System.out.println(json);
 	}
 
-	private static void renderInverterSystem(V1DataSystem v1DataSystem) throws JsonProcessingException {
-
-		String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(v1DataSystem);
-
-		System.out.println(json);
-	}
 }
