@@ -236,13 +236,73 @@ public class Plugs {
 								switch (id) {
 
 								case 17: // Enable AC Charge Upper % Limit
+								case 24: // Enable Eco Mode
+								case 56: // Enable DC Discharge
+								case 66: // AC Charge Enable
+								case 271: // Enable EPS
+								case 380: // Enable Plant EMS Control
 
 									value = postV1InverterSettingReadBoolean(id);
 									break;
 
+								case 28: // AC Charge 2 Start Time
+								case 29: // AC Charge 2 End Time
+								case 41: // DC Discharge 2 Start Time
+								case 42: // DC Discharge 2 End Time
+								case 53: // DC Discharge 1 Start Time
+								case 54: // DC Discharge 1 End Time
 								case 64: // AC Charge 1 Start Time
 								case 65: // AC Charge 1 End Time
+								case 102: // AC Charge 2 Start Time
+								case 103: // AC Charge 2 End Time
+								case 105: // AC Charge 3 Start Time
+								case 106: // AC Charge 3 End Time
+								case 108: // AC Charge 4 Start Time
+								case 109: // AC Charge 4 End Time
+								case 111: // AC Charge 5 Start Time
+								case 112: // AC Charge 5 End Time
+								case 114: // AC Charge 6 Start Time
+								case 115: // AC Charge 6 End Time
+								case 117: // AC Charge 7 Start Time
+								case 118: // AC Charge 7 End Time
+								case 120: // AC Charge 8 Start Time
+								case 121: // AC Charge 8 End Time
+								case 123: // AC Charge 9 Start Time
+								case 124: // AC Charge 9 End Time
+								case 126: // AC Charge 10 Start Time
+								case 127: // AC Charge 10 End Time
+								case 131: // DC Discharge 3 Start Time
+								case 132: // DC Discharge 3 End Time
+								case 134: // DC Discharge 4 Start Time
+								case 135: // DC Discharge 4 End Time
+								case 137: // DC Discharge 5 Start Time
+								case 138: // DC Discharge 5 End Time
+								case 140: // DC Discharge 6 Start Time
+								case 141: // DC Discharge 6 End Time
+								case 143: // DC Discharge 7 Start Time
+								case 144: // DC Discharge 7 End Time
+								case 146: // DC Discharge 8 Start Time
+								case 147: // DC Discharge 8 End Time
+								case 149: // DC Discharge 9 Start Time
+								case 150: // DC Discharge 9 End Time
+								case 152: // DC Discharge 10 Start Time
+								case 153: // DC Discharge 10 End Time
+								case 155: // Pause Battery Start Time
+								case 156: // Pause Battery End Time
 								case 265: // Export Power Priority
+								case 384: // Discharge Start Time Slot 1
+								case 385: // Discharge End Time Slot 1
+								case 387: // Discharge Start Time Slot 2
+								case 388: // Discharge End Time Slot 2
+								case 390: // Discharge Start Time Slot 3
+								case 391: // Discharge End Time Slot 3
+								case 393: // Charge Start Time Slot 1
+								case 394: // Charge End Time Slot 1
+								case 396: // Charge Start Time Slot 2
+								case 397: // Charge End Time Slot 2
+								case 399: // Charge Start Time Slot 3
+								case 400: // Charge End Time Slot 3
+
 									value = postV1InverterSettingReadString(id);
 									break;
 
