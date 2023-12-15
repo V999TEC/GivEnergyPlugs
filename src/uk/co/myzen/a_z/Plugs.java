@@ -216,15 +216,12 @@ public class Plugs {
 							// macro A HH:mm HH:mm 0-6000
 							// set start time, end time and power of timed battery charge
 
-							postV1InverterSettingWriteString(64, args[4]);
-							postV1InverterSettingWriteString(65, args[5]);
-							postV1InverterSettingWrite(72, Integer.parseInt(args[6]));
+							postV1InverterSettingWriteString(64, args[4]); // AC Charge 1 Start Time
+							postV1InverterSettingWriteString(65, args[5]); // AC Charge 1 End Time
+							postV1InverterSettingWrite(72, Integer.parseInt(args[6])); // Battery Charge Power
 						}
 
 					} else if ("setting".equalsIgnoreCase(args[2])) {
-
-						// function A is setting start and end time for battery charging
-						// with rate up to 6000
 
 						if (args.length > 4) {
 
