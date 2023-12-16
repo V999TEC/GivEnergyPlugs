@@ -29,6 +29,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import v1.V1CommunicationDevice;
+import v1.V1CommunicationDeviceData;
+import v1.V1CommunicationDeviceDatum;
 import v1.V1DataBooleanValue;
 import v1.V1DataDescriptor;
 import v1.V1DataIntegerValue;
@@ -205,9 +208,18 @@ public class Plugs {
 
 					} else if ("settings".equalsIgnoreCase(args[2])) {
 
-						V1DataSettings dataSettings = getV1InverterSettings();
+						if ("devices".equalsIgnoreCase(args[3])) {
 
-						renderInverterValue(dataSettings);
+							V1CommunicationDeviceData data = getV1CommunicationDevices("");
+
+							renderInverterValue(data);
+
+						} else {
+
+							V1DataSettings dataSettings = getV1InverterSettings();
+
+							renderInverterValue(dataSettings);
+						}
 
 					} else if ("macro".equalsIgnoreCase(args[2])) {
 
@@ -622,6 +634,49 @@ public class Plugs {
 			e.printStackTrace();
 
 		}
+	}
+
+	private static V1CommunicationDeviceData getV1CommunicationDevices(String optionalSerialNumber)
+			throws MalformedURLException, IOException {
+
+		if (null == optionalSerialNumber) {
+
+			optionalSerialNumber = "";
+		}
+
+		String json = getRequest(new URL(baseUrl + "/communication-device/" + optionalSerialNumber + "?page=1"),
+				"inverter");
+
+		V1CommunicationDeviceData result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1CommunicationDeviceData(); // empty object
+
+		} else {
+
+			if ("".equals(optionalSerialNumber)) {
+
+				result = mapper.readValue(json, V1CommunicationDeviceData.class);
+
+			} else {
+
+				V1CommunicationDeviceDatum datum = mapper.readValue(json, V1CommunicationDeviceDatum.class);
+
+				result = new V1CommunicationDeviceData(); // empty object
+
+				List<V1CommunicationDevice> communicationDevices = new ArrayList<V1CommunicationDevice>();
+
+				communicationDevices.add(datum.getData());
+
+				result.setCommunicationDevices(communicationDevices);
+
+			}
+		}
+
+		return result;
 	}
 
 	private static List<V1TimeAndPower> reverse(List<V1TimeAndPower> timeAndPowerList) {
@@ -1125,6 +1180,24 @@ public class Plugs {
 	}
 
 	private static String getRequest(URL url, String tokenKey) throws IOException {
+
+//		File file = new File("./test.tmp");
+//
+//		BufferedReader reader = new BufferedReader(new FileReader(file));
+//		String line = null;
+//		StringBuilder stringBuilder = new StringBuilder();
+//		String ls = System.getProperty("line.separator");
+//
+//		try {
+//			while ((line = reader.readLine()) != null) {
+//				stringBuilder.append(line);
+//				stringBuilder.append(ls);
+//			}
+//
+//			return stringBuilder.toString();
+//		} finally {
+//			reader.close();
+//		}
 
 		return getRequest(url, true, tokenKey);
 	}
