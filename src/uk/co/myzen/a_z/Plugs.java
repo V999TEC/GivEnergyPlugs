@@ -35,10 +35,12 @@ import v1.V1CommunicationDeviceDatum;
 import v1.V1DataBooleanValue;
 import v1.V1DataDescriptor;
 import v1.V1DataIntegerValue;
+import v1.V1DataMeter;
 import v1.V1DataSettings;
 import v1.V1DataStringValue;
 import v1.V1DataSystem;
 import v1.V1Links;
+import v1.V1Notification;
 import v1.V1SmartDevice;
 import v1.V1SmartDeviceData;
 import v1.V1SmartDevices;
@@ -140,7 +142,7 @@ public class Plugs {
 
 					if (args.length > 2) {
 
-						if (null != alias && 0 != "inverter".compareTo(alias)) {
+						if (null != alias && 0 != "inverter".compareTo(alias) && 0 != "notfication".compareTo(alias)) {
 
 							// the optional 3rd parameter should be a 'from' date which represents the
 							// oldest timestamp we want to filter on
@@ -180,251 +182,268 @@ public class Plugs {
 
 			loadProperties(externalProperties);
 
-			if (null != alias && 0 == "inverter".compareTo(alias)) {
+			ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
 
-				// assume we are requesting details of an inverter
+			if (null != alias) {
 
-				if (2 == args.length) {
+				if (0 == "notification".compareTo(alias)) {
 
-					// default - no further parameters
+					OffsetDateTime odt = OffsetDateTime.ofInstant(Instant.now(), ourZoneId);
 
-					V1DataSystem dataSystem = getV1InverterSystem();
+					postV1Notification("The OffsetDateTime is " + odt.format(defaultDateTimeFormatter));
 
-					renderInverterValue(dataSystem);
+				} else if (0 == "inverter".compareTo(alias)) {
 
-				} else if (args.length > 2) {
+					// assume we are requesting details of an inverter
 
-					if ("presets".equalsIgnoreCase(args[2])) {
+					if (2 == args.length) {
 
-						V1DataDescriptor v1Data = getV1InverterPresets(1, 50);
+						// default - no further parameters
 
-						renderInverterValue(v1Data);
+						V1DataMeter dataMeter = getV1InverterMeter();
 
-					} else if ("system".equalsIgnoreCase(args[2])) {
+						renderInverterValue(dataMeter);
 
-						V1DataSystem dataSystem = getV1InverterSystem();
+					} else if (args.length > 2) {
 
-						renderInverterValue(dataSystem);
+						if ("presets".equalsIgnoreCase(args[2])) {
 
-					} else if ("settings".equalsIgnoreCase(args[2])) {
+							V1DataDescriptor v1Data = getV1InverterPresets(1, 50);
 
-						if ("devices".equalsIgnoreCase(args[3])) {
+							renderInverterValue(v1Data);
 
-							V1CommunicationDeviceData data = getV1CommunicationDevices("");
+						} else if ("system".equalsIgnoreCase(args[2])) {
 
-							renderInverterValue(data);
+							V1DataSystem dataSystem = getV1InverterSystem();
 
-						} else {
+							renderInverterValue(dataSystem);
 
-							V1DataSettings dataSettings = getV1InverterSettings();
+						} else if ("meter".equalsIgnoreCase(args[2])) {
 
-							renderInverterValue(dataSettings);
-						}
+							V1DataMeter dataMeter = getV1InverterMeter();
 
-					} else if ("macro".equalsIgnoreCase(args[2])) {
+							renderInverterValue(dataMeter);
 
-						if ("A".equalsIgnoreCase(args[3]) && 7 == args.length) {
+						} else if ("settings".equalsIgnoreCase(args[2])) {
 
-							// macro A HH:mm HH:mm 0-6000
-							// set start time, end time and power of timed battery charge
+							if ("devices".equalsIgnoreCase(args[3])) {
 
-							postV1InverterSettingWriteString(64, args[4]); // AC Charge 1 Start Time
-							postV1InverterSettingWriteString(65, args[5]); // AC Charge 1 End Time
-							postV1InverterSettingWrite(72, Integer.parseInt(args[6])); // Battery Charge Power
-						}
+								V1CommunicationDeviceData data = getV1CommunicationDevices("");
 
-					} else if ("setting".equalsIgnoreCase(args[2])) {
+								renderInverterValue(data);
 
-						if (args.length > 4) {
+							} else {
 
-							Integer id = Integer.parseInt(args[4]);
+								V1DataSettings dataSettings = getV1InverterSettings();
 
-							if ("read".equalsIgnoreCase(args[3])) {
+								renderInverterValue(dataSettings);
+							}
 
-								System.out.println("read setting with id:" + id);
+						} else if ("macro".equalsIgnoreCase(args[2])) {
 
-								Object value = null;
+							if ("A".equalsIgnoreCase(args[3]) && 7 == args.length) {
 
-								switch (id) {
+								// macro A HH:mm HH:mm 0-6000
+								// set start time, end time and power of timed battery charge
 
-								case 17: // Enable AC Charge Upper % Limit
-								case 24: // Enable Eco Mode
-								case 56: // Enable DC Discharge
-								case 66: // AC Charge Enable
-								case 271: // Enable EPS
-								case 380: // Enable Plant EMS Control
+								postV1InverterSettingWriteString(64, args[4]); // AC Charge 1 Start Time
+								postV1InverterSettingWriteString(65, args[5]); // AC Charge 1 End Time
+								postV1InverterSettingWrite(72, Integer.parseInt(args[6])); // Battery Charge Power
+							}
 
-									value = postV1InverterSettingReadBoolean(id);
-									break;
+						} else if ("setting".equalsIgnoreCase(args[2])) {
 
-								case 28: // AC Charge 2 Start Time
-								case 29: // AC Charge 2 End Time
-								case 41: // DC Discharge 2 Start Time
-								case 42: // DC Discharge 2 End Time
-								case 53: // DC Discharge 1 Start Time
-								case 54: // DC Discharge 1 End Time
-								case 64: // AC Charge 1 Start Time
-								case 65: // AC Charge 1 End Time
-								case 102: // AC Charge 2 Start Time
-								case 103: // AC Charge 2 End Time
-								case 105: // AC Charge 3 Start Time
-								case 106: // AC Charge 3 End Time
-								case 108: // AC Charge 4 Start Time
-								case 109: // AC Charge 4 End Time
-								case 111: // AC Charge 5 Start Time
-								case 112: // AC Charge 5 End Time
-								case 114: // AC Charge 6 Start Time
-								case 115: // AC Charge 6 End Time
-								case 117: // AC Charge 7 Start Time
-								case 118: // AC Charge 7 End Time
-								case 120: // AC Charge 8 Start Time
-								case 121: // AC Charge 8 End Time
-								case 123: // AC Charge 9 Start Time
-								case 124: // AC Charge 9 End Time
-								case 126: // AC Charge 10 Start Time
-								case 127: // AC Charge 10 End Time
-								case 131: // DC Discharge 3 Start Time
-								case 132: // DC Discharge 3 End Time
-								case 134: // DC Discharge 4 Start Time
-								case 135: // DC Discharge 4 End Time
-								case 137: // DC Discharge 5 Start Time
-								case 138: // DC Discharge 5 End Time
-								case 140: // DC Discharge 6 Start Time
-								case 141: // DC Discharge 6 End Time
-								case 143: // DC Discharge 7 Start Time
-								case 144: // DC Discharge 7 End Time
-								case 146: // DC Discharge 8 Start Time
-								case 147: // DC Discharge 8 End Time
-								case 149: // DC Discharge 9 Start Time
-								case 150: // DC Discharge 9 End Time
-								case 152: // DC Discharge 10 Start Time
-								case 153: // DC Discharge 10 End Time
-								case 155: // Pause Battery Start Time
-								case 156: // Pause Battery End Time
-								case 265: // Export Power Priority
-								case 384: // Discharge Start Time Slot 1
-								case 385: // Discharge End Time Slot 1
-								case 387: // Discharge Start Time Slot 2
-								case 388: // Discharge End Time Slot 2
-								case 390: // Discharge Start Time Slot 3
-								case 391: // Discharge End Time Slot 3
-								case 393: // Charge Start Time Slot 1
-								case 394: // Charge End Time Slot 1
-								case 396: // Charge Start Time Slot 2
-								case 397: // Charge End Time Slot 2
-								case 399: // Charge Start Time Slot 3
-								case 400: // Charge End Time Slot 3
+							if (args.length > 4) {
 
-									value = postV1InverterSettingReadString(id);
-									break;
+								Integer id = Integer.parseInt(args[4]);
 
-								case 72: // Battery Charge Power
-								case 73: // Battery Discharge Power
-								default:
-									value = postV1InverterSettingReadInteger(id);
-									break;
+								if ("read".equalsIgnoreCase(args[3])) {
+
+									System.out.println("read setting with id:" + id);
+
+									Object value = null;
+
+									switch (id) {
+
+									case 17: // Enable AC Charge Upper % Limit
+									case 24: // Enable Eco Mode
+									case 56: // Enable DC Discharge
+									case 66: // AC Charge Enable
+									case 271: // Enable EPS
+									case 380: // Enable Plant EMS Control
+
+										value = postV1InverterSettingReadBoolean(id);
+										break;
+
+									case 28: // AC Charge 2 Start Time
+									case 29: // AC Charge 2 End Time
+									case 41: // DC Discharge 2 Start Time
+									case 42: // DC Discharge 2 End Time
+									case 53: // DC Discharge 1 Start Time
+									case 54: // DC Discharge 1 End Time
+									case 64: // AC Charge 1 Start Time
+									case 65: // AC Charge 1 End Time
+									case 102: // AC Charge 2 Start Time
+									case 103: // AC Charge 2 End Time
+									case 105: // AC Charge 3 Start Time
+									case 106: // AC Charge 3 End Time
+									case 108: // AC Charge 4 Start Time
+									case 109: // AC Charge 4 End Time
+									case 111: // AC Charge 5 Start Time
+									case 112: // AC Charge 5 End Time
+									case 114: // AC Charge 6 Start Time
+									case 115: // AC Charge 6 End Time
+									case 117: // AC Charge 7 Start Time
+									case 118: // AC Charge 7 End Time
+									case 120: // AC Charge 8 Start Time
+									case 121: // AC Charge 8 End Time
+									case 123: // AC Charge 9 Start Time
+									case 124: // AC Charge 9 End Time
+									case 126: // AC Charge 10 Start Time
+									case 127: // AC Charge 10 End Time
+									case 131: // DC Discharge 3 Start Time
+									case 132: // DC Discharge 3 End Time
+									case 134: // DC Discharge 4 Start Time
+									case 135: // DC Discharge 4 End Time
+									case 137: // DC Discharge 5 Start Time
+									case 138: // DC Discharge 5 End Time
+									case 140: // DC Discharge 6 Start Time
+									case 141: // DC Discharge 6 End Time
+									case 143: // DC Discharge 7 Start Time
+									case 144: // DC Discharge 7 End Time
+									case 146: // DC Discharge 8 Start Time
+									case 147: // DC Discharge 8 End Time
+									case 149: // DC Discharge 9 Start Time
+									case 150: // DC Discharge 9 End Time
+									case 152: // DC Discharge 10 Start Time
+									case 153: // DC Discharge 10 End Time
+									case 155: // Pause Battery Start Time
+									case 156: // Pause Battery End Time
+									case 265: // Export Power Priority
+									case 384: // Discharge Start Time Slot 1
+									case 385: // Discharge End Time Slot 1
+									case 387: // Discharge Start Time Slot 2
+									case 388: // Discharge End Time Slot 2
+									case 390: // Discharge Start Time Slot 3
+									case 391: // Discharge End Time Slot 3
+									case 393: // Charge Start Time Slot 1
+									case 394: // Charge End Time Slot 1
+									case 396: // Charge Start Time Slot 2
+									case 397: // Charge End Time Slot 2
+									case 399: // Charge Start Time Slot 3
+									case 400: // Charge End Time Slot 3
+
+										value = postV1InverterSettingReadString(id);
+										break;
+
+									case 72: // Battery Charge Power
+									case 73: // Battery Discharge Power
+									default:
+										value = postV1InverterSettingReadInteger(id);
+										break;
+									}
+
+									System.out.println("response is: ");
+
+									renderInverterValue(value);
+
+								} else if ("write".equalsIgnoreCase(args[3]) && args.length > 5) {
+
+									System.out.println("write setting with id:" + id + " new value:" + args[5]);
+
+									Object value = null;
+
+									switch (id) {
+
+									case 17: // Enable AC Charge Upper % Limit
+									case 24: // Enable Eco Mode
+									case 56: // Enable DC Discharge
+									case 66: // AC Charge Enable
+									case 271: // Enable EPS
+									case 380: // Enable Plant EMS Control
+
+										Boolean bool = Boolean.parseBoolean(args[5]);
+
+										value = postV1InverterSettingWriteBoolean(id, bool);
+										break;
+
+									case 28: // AC Charge 2 Start Time
+									case 29: // AC Charge 2 End Time
+									case 41: // DC Discharge 2 Start Time
+									case 42: // DC Discharge 2 End Time
+									case 53: // DC Discharge 1 Start Time
+									case 54: // DC Discharge 1 End Time
+									case 64: // AC Charge 1 Start Time
+									case 65: // AC Charge 1 End Time
+									case 102: // AC Charge 2 Start Time
+									case 103: // AC Charge 2 End Time
+									case 105: // AC Charge 3 Start Time
+									case 106: // AC Charge 3 End Time
+									case 108: // AC Charge 4 Start Time
+									case 109: // AC Charge 4 End Time
+									case 111: // AC Charge 5 Start Time
+									case 112: // AC Charge 5 End Time
+									case 114: // AC Charge 6 Start Time
+									case 115: // AC Charge 6 End Time
+									case 117: // AC Charge 7 Start Time
+									case 118: // AC Charge 7 End Time
+									case 120: // AC Charge 8 Start Time
+									case 121: // AC Charge 8 End Time
+									case 123: // AC Charge 9 Start Time
+									case 124: // AC Charge 9 End Time
+									case 126: // AC Charge 10 Start Time
+									case 127: // AC Charge 10 End Time
+									case 131: // DC Discharge 3 Start Time
+									case 132: // DC Discharge 3 End Time
+									case 134: // DC Discharge 4 Start Time
+									case 135: // DC Discharge 4 End Time
+									case 137: // DC Discharge 5 Start Time
+									case 138: // DC Discharge 5 End Time
+									case 140: // DC Discharge 6 Start Time
+									case 141: // DC Discharge 6 End Time
+									case 143: // DC Discharge 7 Start Time
+									case 144: // DC Discharge 7 End Time
+									case 146: // DC Discharge 8 Start Time
+									case 147: // DC Discharge 8 End Time
+									case 149: // DC Discharge 9 Start Time
+									case 150: // DC Discharge 9 End Time
+									case 152: // DC Discharge 10 Start Time
+									case 153: // DC Discharge 10 End Time
+									case 155: // Pause Battery Start Time
+									case 156: // Pause Battery End Time
+									case 265: // Export Power Priority
+									case 384: // Discharge Start Time Slot 1
+									case 385: // Discharge End Time Slot 1
+									case 387: // Discharge Start Time Slot 2
+									case 388: // Discharge End Time Slot 2
+									case 390: // Discharge Start Time Slot 3
+									case 391: // Discharge End Time Slot 3
+									case 393: // Charge Start Time Slot 1
+									case 394: // Charge End Time Slot 1
+									case 396: // Charge Start Time Slot 2
+									case 397: // Charge End Time Slot 2
+									case 399: // Charge Start Time Slot 3
+									case 400: // Charge End Time Slot 3
+
+										String string = args[5];
+
+										value = postV1InverterSettingWriteString(id, string);
+										break;
+
+									case 72: // Battery Charge Power
+									case 73: // Battery Discharge Power
+
+									default:
+										Integer integer = Integer.parseInt(args[5]);
+
+										value = postV1InverterSettingWrite(id, integer);
+										break;
+									}
+
+									System.out.println("response is: ");
+
+									renderInverterValue(value);
 								}
-
-								System.out.println("response is: ");
-
-								renderInverterValue(value);
-
-							} else if ("write".equalsIgnoreCase(args[3]) && args.length > 5) {
-
-								System.out.println("write setting with id:" + id + " new value:" + args[5]);
-
-								Object value = null;
-
-								switch (id) {
-
-								case 17: // Enable AC Charge Upper % Limit
-								case 24: // Enable Eco Mode
-								case 56: // Enable DC Discharge
-								case 66: // AC Charge Enable
-								case 271: // Enable EPS
-								case 380: // Enable Plant EMS Control
-
-									Boolean bool = Boolean.parseBoolean(args[5]);
-
-									value = postV1InverterSettingWriteBoolean(id, bool);
-									break;
-
-								case 28: // AC Charge 2 Start Time
-								case 29: // AC Charge 2 End Time
-								case 41: // DC Discharge 2 Start Time
-								case 42: // DC Discharge 2 End Time
-								case 53: // DC Discharge 1 Start Time
-								case 54: // DC Discharge 1 End Time
-								case 64: // AC Charge 1 Start Time
-								case 65: // AC Charge 1 End Time
-								case 102: // AC Charge 2 Start Time
-								case 103: // AC Charge 2 End Time
-								case 105: // AC Charge 3 Start Time
-								case 106: // AC Charge 3 End Time
-								case 108: // AC Charge 4 Start Time
-								case 109: // AC Charge 4 End Time
-								case 111: // AC Charge 5 Start Time
-								case 112: // AC Charge 5 End Time
-								case 114: // AC Charge 6 Start Time
-								case 115: // AC Charge 6 End Time
-								case 117: // AC Charge 7 Start Time
-								case 118: // AC Charge 7 End Time
-								case 120: // AC Charge 8 Start Time
-								case 121: // AC Charge 8 End Time
-								case 123: // AC Charge 9 Start Time
-								case 124: // AC Charge 9 End Time
-								case 126: // AC Charge 10 Start Time
-								case 127: // AC Charge 10 End Time
-								case 131: // DC Discharge 3 Start Time
-								case 132: // DC Discharge 3 End Time
-								case 134: // DC Discharge 4 Start Time
-								case 135: // DC Discharge 4 End Time
-								case 137: // DC Discharge 5 Start Time
-								case 138: // DC Discharge 5 End Time
-								case 140: // DC Discharge 6 Start Time
-								case 141: // DC Discharge 6 End Time
-								case 143: // DC Discharge 7 Start Time
-								case 144: // DC Discharge 7 End Time
-								case 146: // DC Discharge 8 Start Time
-								case 147: // DC Discharge 8 End Time
-								case 149: // DC Discharge 9 Start Time
-								case 150: // DC Discharge 9 End Time
-								case 152: // DC Discharge 10 Start Time
-								case 153: // DC Discharge 10 End Time
-								case 155: // Pause Battery Start Time
-								case 156: // Pause Battery End Time
-								case 265: // Export Power Priority
-								case 384: // Discharge Start Time Slot 1
-								case 385: // Discharge End Time Slot 1
-								case 387: // Discharge Start Time Slot 2
-								case 388: // Discharge End Time Slot 2
-								case 390: // Discharge Start Time Slot 3
-								case 391: // Discharge End Time Slot 3
-								case 393: // Charge Start Time Slot 1
-								case 394: // Charge End Time Slot 1
-								case 396: // Charge Start Time Slot 2
-								case 397: // Charge End Time Slot 2
-								case 399: // Charge Start Time Slot 3
-								case 400: // Charge End Time Slot 3
-
-									String string = args[5];
-
-									value = postV1InverterSettingWriteString(id, string);
-									break;
-
-								case 72: // Battery Charge Power
-								case 73: // Battery Discharge Power
-
-								default:
-									Integer integer = Integer.parseInt(args[5]);
-
-									value = postV1InverterSettingWrite(id, integer);
-									break;
-								}
-
-								System.out.println("response is: ");
-
-								renderInverterValue(value);
 							}
 						}
 					}
@@ -436,8 +455,6 @@ public class Plugs {
 			if (null != alias && properties.containsKey(alias)) {
 
 //				System.out.println("Device <" + alias + ">");
-
-				ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
 
 				List<V1TimeAndPower> cacheNewestFirst = null;
 
@@ -1033,6 +1050,44 @@ public class Plugs {
 		return result;
 	}
 
+	private static V1DataIntegerValue postV1Notification(String value)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		V1Notification notification = new V1Notification();
+
+		List<String> platforms = new ArrayList<String>();
+
+		platforms.add("persist");
+
+		notification.setPlatforms(platforms);
+
+		notification.setBody(value);
+
+		notification.setTitle("Here is some information about the amazing thing that has happened");
+
+		notification.setIcon("mdi-information-box");
+
+		String payload = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(notification);
+
+		String json = postRequest(new URL(baseUrl + "/notification/send/"), "notification-send", payload);
+
+		V1DataIntegerValue result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataIntegerValue(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataIntegerValue.class);
+		}
+
+		return result;
+
+	}
+
 	// postV1InverterSettingWrite
 	private static V1DataIntegerValue postV1InverterSettingWrite(int id, Integer value)
 			throws MalformedURLException, IOException, URISyntaxException {
@@ -1173,6 +1228,28 @@ public class Plugs {
 		} else {
 
 			result = mapper.readValue(json, V1DataSystem.class);
+		}
+
+		return result;
+
+	}
+
+	private static V1DataMeter getV1InverterMeter() throws MalformedURLException, IOException {
+
+		String json = getRequest(
+				new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/meter-data/latest"), "inverter");
+
+		V1DataMeter result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new V1DataMeter(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, V1DataMeter.class);
 		}
 
 		return result;
