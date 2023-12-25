@@ -226,17 +226,17 @@ public class Plugs {
 
 						} else if ("settings".equalsIgnoreCase(args[2])) {
 
-							if ("devices".equalsIgnoreCase(args[3])) {
-
-								V1CommunicationDeviceData data = getV1CommunicationDevices("");
-
-								renderInverterValue(data);
-
-							} else {
+							if (args.length < 4) {
 
 								V1DataSettings dataSettings = getV1InverterSettings();
 
 								renderInverterValue(dataSettings);
+
+							} else if ("devices".equalsIgnoreCase(args[3])) {
+
+								V1CommunicationDeviceData data = getV1CommunicationDevices("");
+
+								renderInverterValue(data);
 							}
 
 						} else if ("macro".equalsIgnoreCase(args[2])) {
@@ -246,9 +246,31 @@ public class Plugs {
 								// macro A HH:mm HH:mm 0-6000
 								// set start time, end time and power of timed battery charge
 
-								postV1InverterSettingWriteString(64, args[4]); // AC Charge 1 Start Time
-								postV1InverterSettingWriteString(65, args[5]); // AC Charge 1 End Time
-								postV1InverterSettingWrite(72, Integer.parseInt(args[6])); // Battery Charge Power
+								int power = Integer.parseInt(args[6]);
+
+								postV1InverterSettingWriteString(64, power < 1 ? "00:00" : args[4]); // AC Charge 1
+																										// Start Time or
+																										// midnight
+								postV1InverterSettingWriteString(65, power < 1 ? "00:00" : args[5]); // AC Charge 1 End
+																										// Time or
+																										// midnight
+								postV1InverterSettingWrite(72, power); // Battery Charge Power
+
+							} else if ("B".equalsIgnoreCase(args[3]) && 7 == args.length) {
+
+								// macro B HH:mm HH:mm 0-6000
+								// set start time, end time and power of timed battery charge
+
+								int power = Integer.parseInt(args[6]);
+
+								// 28 & 29 or 102 & 103
+								postV1InverterSettingWriteString(102, power < 1 ? "00:00" : args[4]); // AC Charge 1
+																										// Start Time or
+																										// midnight
+								postV1InverterSettingWriteString(103, power < 1 ? "00:00" : args[5]); // AC Charge 1 End
+																										// Time or
+																										// midnight
+								postV1InverterSettingWrite(72, power); // Battery Charge Power
 							}
 
 						} else if ("setting".equalsIgnoreCase(args[2])) {
