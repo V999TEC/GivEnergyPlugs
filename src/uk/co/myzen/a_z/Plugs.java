@@ -241,36 +241,167 @@ public class Plugs {
 
 						} else if ("macro".equalsIgnoreCase(args[2])) {
 
-							if ("A".equalsIgnoreCase(args[3]) && 7 == args.length) {
+							// inverter macro X [HH:mm HH:mm [ Soc ]]
+							// if Soc not specified or it is "" or < 0 then no change
+							// if Soc > 100 SoC set to 100
 
-								// macro A HH:mm HH:mm 0-6000
-								// set start time, end time and power of timed battery charge
+							// if no time(s) specified than assume 00:00 implied
 
-								int power = Integer.parseInt(args[6]);
+							int soc = -1; // implies don't set value
 
-								postV1InverterSettingWriteString(64, power < 1 ? "00:00" : args[4]); // AC Charge 1
-																										// Start Time or
-																										// midnight
-								postV1InverterSettingWriteString(65, power < 1 ? "00:00" : args[5]); // AC Charge 1 End
-																										// Time or
-																										// midnight
-								postV1InverterSettingWrite(72, power); // Battery Charge Power
+							if (7 == args.length) { // assume a SoC specified or ""
 
-							} else if ("B".equalsIgnoreCase(args[3]) && 7 == args.length) {
+								if (0 != "".compareTo(args[6])) {
 
-								// macro B HH:mm HH:mm 0-6000
-								// set start time, end time and power of timed battery charge
+									soc = Integer.parseInt(args[6]);
 
-								int power = Integer.parseInt(args[6]);
+									if (soc > 100) {
 
-								// 28 & 29 or 102 & 103
-								postV1InverterSettingWriteString(102, power < 1 ? "00:00" : args[4]); // AC Charge 1
-																										// Start Time or
-																										// midnight
-								postV1InverterSettingWriteString(103, power < 1 ? "00:00" : args[5]); // AC Charge 1 End
-																										// Time or
-																										// midnight
-								postV1InverterSettingWrite(72, power); // Battery Charge Power
+										soc = 100;
+									}
+								}
+							}
+
+							if (args.length > 3) {
+
+								if ("A".equalsIgnoreCase(args[3])) {
+
+									// macro A HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(64, args.length < 5 ? "00:00" : args[4]);
+									// AC
+									// Charge
+									// 1
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
+									// AC
+									// Charge
+									// 1
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(101, soc); // AC Charge 1 Upper
+																				// SOC %
+																				// Limit
+									}
+
+								} else if ("B".equalsIgnoreCase(args[3])) {
+
+									// macro B HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									// 28 & 29 or 102 & 103
+
+									postV1InverterSettingWriteString(102, args.length < 5 ? "00:00" : args[4]);
+									// AC
+									// Charge
+									// 2
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
+									// AC
+									// Charge
+									// 2
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(104, soc); // AC Charge 2 Upper
+																				// SOC %
+																				// Limit
+									}
+
+								} else if ("C".equalsIgnoreCase(args[3])) {
+
+									// macro B HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(105, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 3
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 3
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(107, soc); // AC Charge 3 Upper
+																				// SOC %
+																				// Limit
+									}
+
+								} else if ("D".equalsIgnoreCase(args[3])) {
+
+									// macro B HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									// 28 & 29 or 102 & 103
+
+									postV1InverterSettingWriteString(108, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 4
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 4
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(110, soc); // AC Charge 4 Upper
+																				// SOC %
+																				// Limit
+									}
+
+								} else if ("E".equalsIgnoreCase(args[3])) {
+
+									// macro B HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(111, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 5
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 5
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(113, soc); // AC Charge 5 Upper
+																				// SOC %
+																				// Limit
+									}
+								}
 							}
 
 						} else if ("setting".equalsIgnoreCase(args[2])) {
@@ -454,6 +585,17 @@ public class Plugs {
 
 									case 72: // Battery Charge Power
 									case 73: // Battery Discharge Power
+
+									case 101: // AC Charge 1 Upper SOC % Limit
+									case 104: // AC Charge 2 Upper SOC % Limit
+									case 107: // AC Charge 3 Upper SOC % Limit
+									case 110: // AC Charge 4 Upper SOC % Limit
+									case 113: // AC Charge 5 Upper SOC % Limit
+									case 116: // AC Charge 6 Upper SOC % Limit
+									case 119: // AC Charge 7 Upper SOC % Limit
+									case 122: // AC Charge 8 Upper SOC % Limit
+									case 125: // AC Charge 9 Upper SOC % Limit
+									case 128: // AC Charge 10 Upper SOC % Limit
 
 									default:
 										Integer integer = Integer.parseInt(args[5]);
@@ -1114,25 +1256,45 @@ public class Plugs {
 	private static V1DataIntegerValue postV1InverterSettingWrite(int id, Integer value)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-//		String body = "{\"data\": {\"value\": \"" + value + "\"}}";
+		V1DataIntegerValue result = null;
 
 		String body = "{\"value\": " + value + "}";
 
-		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-				+ String.valueOf(id) + "/write"), "inverter", body);
+		int count = 0;
 
-		V1DataIntegerValue result = null;
+		do {
 
-		if (null == json || 0 == json.trim().length()) {
+			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+					+ String.valueOf(id) + "/write"), "inverter", body);
 
-			System.err.println("Error obtaining data. Check the token in property file!");
+			if (null == json || 0 == json.trim().length()) {
 
-			result = new V1DataIntegerValue(); // empty object
+				System.err.println("Error obtaining data. Check the token in property file!");
 
-		} else {
+				result = new V1DataIntegerValue(); // empty object
 
-			result = mapper.readValue(json, V1DataIntegerValue.class);
-		}
+			} else {
+
+				result = mapper.readValue(json, V1DataIntegerValue.class);
+			}
+
+			if (result.getData().getSuccess()) {
+
+				break;
+			}
+
+			System.err.println(count + "\t" + result.getData().getSuccess() + "\t" + result.getData().getMessage()
+					+ "\t" + result.getData().getValue());
+
+			try {
+				Thread.sleep(5000L);
+
+			} catch (InterruptedException e) {
+
+				e.printStackTrace();
+			}
+
+		} while (++count < 5);
 
 		return result;
 
@@ -1141,51 +1303,93 @@ public class Plugs {
 	private static V1DataStringValue postV1InverterSettingWriteString(int id, String value)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-		String body = "{\"value\": \"" + value + "\"}";
-
-		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-				+ String.valueOf(id) + "/write"), "inverter", body);
-
 		V1DataStringValue result = null;
 
-		if (null == json || 0 == json.trim().length()) {
+		String body = "{\"value\": \"" + value + "\"}";
 
-			System.err.println("Error obtaining data. Check the token in property file!");
+		int count = 0;
 
-			result = new V1DataStringValue(); // empty object
+		do {
 
-		} else {
+			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+					+ String.valueOf(id) + "/write"), "inverter", body);
 
-			result = mapper.readValue(json, V1DataStringValue.class);
-		}
+			if (null == json || 0 == json.trim().length()) {
+
+				System.err.println("Error obtaining data. Check the token in property file!");
+
+				result = new V1DataStringValue(); // empty object
+
+			} else {
+
+				result = mapper.readValue(json, V1DataStringValue.class);
+			}
+
+			if (result.getData().getSuccess()) {
+
+				break;
+			}
+
+			System.err.println(count + "\t" + result.getData().getSuccess() + "\t" + result.getData().getMessage()
+					+ "\t" + result.getData().getValue());
+
+			try {
+				Thread.sleep(5000L);
+
+			} catch (InterruptedException e) {
+
+				e.printStackTrace();
+			}
+
+		} while (++count < 5);
 
 		return result;
-
 	}
 
 	private static V1DataBooleanValue postV1InverterSettingWriteBoolean(int id, Boolean value)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-		String body = "{\"value\": " + value + "}";
-
-		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-				+ String.valueOf(id) + "/write"), "inverter", body);
-
 		V1DataBooleanValue result = null;
 
-		if (null == json || 0 == json.trim().length()) {
+		String body = "{\"value\": " + value + "}";
 
-			System.err.println("Error obtaining data. Check the token in property file!");
+		int count = 0;
 
-			result = new V1DataBooleanValue(); // empty object
+		do {
 
-		} else {
+			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+					+ String.valueOf(id) + "/write"), "inverter", body);
 
-			result = mapper.readValue(json, V1DataBooleanValue.class);
-		}
+			if (null == json || 0 == json.trim().length()) {
+
+				System.err.println("Error obtaining data. Check the token in property file!");
+
+				result = new V1DataBooleanValue(); // empty object
+
+			} else {
+
+				result = mapper.readValue(json, V1DataBooleanValue.class);
+			}
+
+			if (result.getData().getSuccess()) {
+
+				break;
+			}
+
+			System.err.println(count + "\t" + result.getData().getSuccess() + "\t" + result.getData().getMessage()
+					+ "\t" + result.getData().getValue());
+
+			try {
+				Thread.sleep(5000L);
+
+			} catch (InterruptedException e) {
+
+				e.printStackTrace();
+			}
+
+		} while (++count < 5);
 
 		return result;
-
 	}
 
 	private static V1DataSettings getV1InverterSettings() throws MalformedURLException, IOException {
@@ -1375,6 +1579,14 @@ public class Plugs {
 			con.disconnect();
 		}
 
+		try {
+			Thread.sleep(2000L);
+
+		} catch (InterruptedException e) {
+
+			e.printStackTrace();
+		}
+
 		return json;
 	}
 
@@ -1453,6 +1665,14 @@ public class Plugs {
 		if (null != con) {
 
 			con.disconnect();
+		}
+
+		try {
+			Thread.sleep(2000L);
+
+		} catch (InterruptedException e) {
+
+			e.printStackTrace();
 		}
 
 		return json;

@@ -2,7 +2,7 @@ package v1;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class V1DataBooleanValue extends V1ResponseMessage {
+public class V1DataBooleanValue {
 
 	@JsonProperty("data")
 	private V1BooleanValue data;
