@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import v1.V1BatteryData;
 import v1.V1CommunicationDevice;
 import v1.V1CommunicationDeviceData;
 import v1.V1CommunicationDeviceDatum;
@@ -39,7 +40,9 @@ import v1.V1DataMeter;
 import v1.V1DataSettings;
 import v1.V1DataStringValue;
 import v1.V1DataSystem;
+import v1.V1ImportExport;
 import v1.V1Links;
+import v1.V1Meters;
 import v1.V1Notification;
 import v1.V1SmartDevice;
 import v1.V1SmartDeviceData;
@@ -216,13 +219,82 @@ public class Plugs {
 
 							V1DataSystem dataSystem = getV1InverterSystem();
 
-							renderInverterValue(dataSystem);
+							if (args.length > 3 && "battery".equalsIgnoreCase(args[3])) {
+
+								V1BatteryData batteryData = dataSystem.getData().getBattery();
+
+								if (args.length > 4) {
+
+									if ("percent".equalsIgnoreCase(args[4])) {
+
+										System.out.println(batteryData.getPercent());
+
+									} else if ("power".equalsIgnoreCase(args[4])) {
+
+										System.out.println(batteryData.getPower());
+
+									} else if ("temperature".equalsIgnoreCase(args[4])) {
+
+										System.out.println(batteryData.getTemperature());
+									}
+
+								} else {
+
+									renderInverterValue(batteryData);
+								}
+
+							} else {
+
+								renderInverterValue(dataSystem);
+							}
 
 						} else if ("meter".equalsIgnoreCase(args[2])) {
 
 							V1DataMeter dataMeter = getV1InverterMeter();
 
-							renderInverterValue(dataMeter);
+							if (3 == args.length) {
+
+								renderInverterValue(dataMeter);
+
+							} else if (args.length > 3 && "today".equalsIgnoreCase(args[3])) {
+
+								V1Meters today = dataMeter.getData().getToday();
+
+								if (4 == args.length) {
+
+									renderInverterValue(today);
+
+								} else if (args.length > 4) {
+
+									if ("solar".equalsIgnoreCase(args[4])) {
+
+										renderInverterValue(today.getSolar());
+
+									} else if ("grid".equalsIgnoreCase(args[4])) {
+
+										V1ImportExport grid = today.getGrid();
+
+										if (args.length > 5) {
+
+											if ("import".equalsIgnoreCase(args[5])) {
+
+												renderInverterValue(grid.getImp());
+												grid = null;
+
+											} else if ("export".equalsIgnoreCase(args[5])) {
+
+												renderInverterValue(grid.getExport());
+												grid = null;
+											}
+										}
+
+										if (null != grid) {
+
+											renderInverterValue(grid);
+										}
+									}
+								}
+							}
 
 						} else if ("settings".equalsIgnoreCase(args[2])) {
 
@@ -398,6 +470,131 @@ public class Plugs {
 									if (soc > -1) {
 
 										postV1InverterSettingWrite(113, soc); // AC Charge 5 Upper
+																				// SOC %
+																				// Limit
+									}
+								} else if ("F".equalsIgnoreCase(args[3])) {
+
+									// macro F HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(114, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 6
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 6
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(116, soc); // AC Charge 6 Upper
+																				// SOC %
+																				// Limit
+									}
+								} else if ("G".equalsIgnoreCase(args[3])) {
+
+									// macro G HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(117, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 7
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 7
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(119, soc); // AC Charge 7 Upper
+																				// SOC %
+																				// Limit
+									}
+								} else if ("H".equalsIgnoreCase(args[3])) {
+
+									// macro H HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(120, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 8
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 8
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(122, soc); // AC Charge 8 Upper
+																				// SOC %
+																				// Limit
+									}
+								} else if ("I".equalsIgnoreCase(args[3])) {
+
+									// macro I HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(123, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 9
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 9
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(125, soc); // AC Charge 9 Upper
+																				// SOC %
+																				// Limit
+									}
+								} else if ("J".equalsIgnoreCase(args[3])) {
+
+									// macro J HH:mm HH:mm 0-100
+									// set start time, end time and SoC of timed battery charge
+
+									postV1InverterSettingWriteString(126, args.length < 5 ? "00:00" : args[4]); // AC
+									// Charge
+									// 10
+									// Start
+									// Time or
+									// midnight
+
+									postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
+									// Charge
+									// 10
+									// End
+									// Time or
+									// midnight
+
+									if (soc > -1) {
+
+										postV1InverterSettingWrite(128, soc); // AC Charge 10 Upper
 																				// SOC %
 																				// Limit
 									}
