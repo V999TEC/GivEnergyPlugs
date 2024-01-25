@@ -27,3 +27,5 @@ bin/**
 target/**
 SwindonIcarus.properties
 plugs.jar
+rfi.log2
+rfi.cmd

@@ -41,12 +41,14 @@ import v1.V1DataSettings;
 import v1.V1DataStringValue;
 import v1.V1DataSystem;
 import v1.V1ImportExport;
+import v1.V1Inverter;
 import v1.V1Links;
 import v1.V1Meters;
 import v1.V1Notification;
 import v1.V1SmartDevice;
 import v1.V1SmartDeviceData;
 import v1.V1SmartDevices;
+import v1.V1SystemData;
 import v1.V1TimeAndPower;
 
 public class Plugs {
@@ -217,35 +219,74 @@ public class Plugs {
 
 						} else if ("system".equalsIgnoreCase(args[2])) {
 
-							V1DataSystem dataSystem = getV1InverterSystem();
+							V1SystemData dataSystemData = getV1InverterSystem().getData();
 
-							if (args.length > 3 && "battery".equalsIgnoreCase(args[3])) {
+							if (args.length > 3) {
 
-								V1BatteryData batteryData = dataSystem.getData().getBattery();
+								if ("battery".equalsIgnoreCase(args[3])) {
 
-								if (args.length > 4) {
+									V1BatteryData batteryData = dataSystemData.getBattery();
 
-									if ("percent".equalsIgnoreCase(args[4])) {
+									if (args.length > 4) {
 
-										System.out.println(batteryData.getPercent());
+										if ("percent".equalsIgnoreCase(args[4])) {
 
-									} else if ("power".equalsIgnoreCase(args[4])) {
+											System.out.println(batteryData.getPercent());
 
-										System.out.println(batteryData.getPower());
+										} else if ("power".equalsIgnoreCase(args[4])) {
 
-									} else if ("temperature".equalsIgnoreCase(args[4])) {
+											System.out.println(batteryData.getPower());
 
-										System.out.println(batteryData.getTemperature());
+										} else if ("temperature".equalsIgnoreCase(args[4])) {
+
+											System.out.println(batteryData.getTemperature());
+										}
+
+									} else {
+
+										renderInverterValue(batteryData);
+									}
+
+								} else if ("inverter".equalsIgnoreCase(args[3])) {
+
+									V1Inverter inverter = dataSystemData.getInverter();
+
+									if (args.length > 4) {
+
+										if ("power".equalsIgnoreCase(args[4])) {
+
+											System.out.println(inverter.getPower());
+
+										} else if ("temperature".equalsIgnoreCase(args[4])) {
+
+											System.out.println(inverter.getTemperature());
+
+										} else if ("eps_power".equalsIgnoreCase(args[4])) {
+
+											System.out.println(inverter.getEpsPower());
+
+										} else if ("output_voltage".equalsIgnoreCase(args[4])) {
+
+											System.out.println(inverter.getOutputVoltage());
+
+										} else if ("output_frequency".equalsIgnoreCase(args[4])) {
+
+											System.out.println(inverter.getOutputFrequency());
+
+										} else {
+
+											renderInverterValue(inverter);
+										}
+
+									} else {
+
+										renderInverterValue(inverter);
 									}
 
 								} else {
 
-									renderInverterValue(batteryData);
+									renderInverterValue(dataSystemData);
 								}
-
-							} else {
-
-								renderInverterValue(dataSystem);
 							}
 
 						} else if ("meter".equalsIgnoreCase(args[2])) {
