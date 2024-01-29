@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import v1.V1BatteryData;
+import v1.V1ChargeDischarge;
 import v1.V1CommunicationDevice;
 import v1.V1CommunicationDeviceData;
 import v1.V1CommunicationDeviceDatum;
@@ -307,9 +308,40 @@ public class Plugs {
 
 								} else if (args.length > 4) {
 
-									if ("solar".equalsIgnoreCase(args[4])) {
+									if ("ac_charge".equalsIgnoreCase(args[4])) {
 
-										renderInverterValue(today.getSolar());
+										System.out.println(today.getAcCharge());
+
+									} else if ("consumption".equalsIgnoreCase(args[4])) {
+
+										System.out.println(today.getConsumption());
+
+									} else if ("solar".equalsIgnoreCase(args[4])) {
+
+										System.out.println(today.getSolar());
+
+									} else if ("battery".equalsIgnoreCase(args[4])) {
+
+										V1ChargeDischarge chargeDischarge = today.getBattery();
+
+										if (args.length > 5) {
+
+											if ("charge".equalsIgnoreCase(args[5])) {
+
+												System.out.println(chargeDischarge.getCharge());
+												chargeDischarge = null;
+
+											} else if ("discharge".equalsIgnoreCase(args[5])) {
+
+												System.out.println(chargeDischarge.getDischarge());
+												chargeDischarge = null;
+											}
+										}
+
+										if (null != chargeDischarge) {
+
+											renderInverterValue(chargeDischarge);
+										}
 
 									} else if ("grid".equalsIgnoreCase(args[4])) {
 
@@ -319,12 +351,12 @@ public class Plugs {
 
 											if ("import".equalsIgnoreCase(args[5])) {
 
-												renderInverterValue(grid.getImp());
+												System.out.println(grid.getImp());
 												grid = null;
 
 											} else if ("export".equalsIgnoreCase(args[5])) {
 
-												renderInverterValue(grid.getExport());
+												System.out.println(grid.getExport());
 												grid = null;
 											}
 										}
