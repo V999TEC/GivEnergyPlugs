@@ -190,883 +190,7 @@ public class Plugs {
 
 			ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
 
-			if (null != alias) {
-
-				if (0 == "notification".compareTo(alias)) {
-
-					OffsetDateTime odt = OffsetDateTime.ofInstant(Instant.now(), ourZoneId);
-
-					postV1Notification("The OffsetDateTime is " + odt.format(defaultDateTimeFormatter));
-
-				} else if (0 == "inverter".compareTo(alias)) {
-
-					// assume we are requesting details of an inverter
-
-					if (2 == args.length) {
-
-						// default - no further parameters
-
-						V1DataMeter dataMeter = getV1InverterMeter();
-
-						renderInverterValue(dataMeter);
-
-					} else if (args.length > 2) {
-
-						if ("presets".equalsIgnoreCase(args[2])) {
-
-							V1DataDescriptor v1Data = getV1InverterPresets(1, 50);
-
-							renderInverterValue(v1Data);
-
-						} else if ("system".equalsIgnoreCase(args[2])) {
-
-							V1SystemData dataSystemData = getV1InverterSystem().getData();
-
-							if (args.length > 3) {
-
-								if ("battery".equalsIgnoreCase(args[3])) {
-
-									V1BatteryData batteryData = dataSystemData.getBattery();
-
-									if (args.length > 4) {
-
-										if ("percent".equalsIgnoreCase(args[4])) {
-
-											System.out.println(batteryData.getPercent());
-
-										} else if ("power".equalsIgnoreCase(args[4])) {
-
-											System.out.println(batteryData.getPower());
-
-										} else if ("temperature".equalsIgnoreCase(args[4])) {
-
-											System.out.println(batteryData.getTemperature());
-										}
-
-									} else {
-
-										renderInverterValue(batteryData);
-									}
-
-								} else if ("inverter".equalsIgnoreCase(args[3])) {
-
-									V1Inverter inverter = dataSystemData.getInverter();
-
-									if (args.length > 4) {
-
-										if ("power".equalsIgnoreCase(args[4])) {
-
-											System.out.println(inverter.getPower());
-
-										} else if ("temperature".equalsIgnoreCase(args[4])) {
-
-											System.out.println(inverter.getTemperature());
-
-										} else if ("eps_power".equalsIgnoreCase(args[4])) {
-
-											System.out.println(inverter.getEpsPower());
-
-										} else if ("output_voltage".equalsIgnoreCase(args[4])) {
-
-											System.out.println(inverter.getOutputVoltage());
-
-										} else if ("output_frequency".equalsIgnoreCase(args[4])) {
-
-											System.out.println(inverter.getOutputFrequency());
-
-										} else {
-
-											renderInverterValue(inverter);
-										}
-
-									} else {
-
-										renderInverterValue(inverter);
-									}
-
-								} else {
-
-									renderInverterValue(dataSystemData);
-								}
-							}
-
-						} else if ("meter".equalsIgnoreCase(args[2])) {
-
-							V1DataMeter dataMeter = getV1InverterMeter();
-
-							if (3 == args.length) {
-
-								renderInverterValue(dataMeter);
-
-							} else if (args.length > 3 && "today".equalsIgnoreCase(args[3])) {
-
-								V1Meters today = dataMeter.getData().getToday();
-
-								if (4 == args.length) {
-
-									renderInverterValue(today);
-
-								} else if (args.length > 4) {
-
-									if ("ac_charge".equalsIgnoreCase(args[4])) {
-
-										System.out.println(today.getAcCharge());
-
-									} else if ("consumption".equalsIgnoreCase(args[4])) {
-
-										System.out.println(today.getConsumption());
-
-									} else if ("solar".equalsIgnoreCase(args[4])) {
-
-										System.out.println(today.getSolar());
-
-									} else if ("battery".equalsIgnoreCase(args[4])) {
-
-										V1ChargeDischarge chargeDischarge = today.getBattery();
-
-										if (args.length > 5) {
-
-											if ("charge".equalsIgnoreCase(args[5])) {
-
-												System.out.println(chargeDischarge.getCharge());
-												chargeDischarge = null;
-
-											} else if ("discharge".equalsIgnoreCase(args[5])) {
-
-												System.out.println(chargeDischarge.getDischarge());
-												chargeDischarge = null;
-											}
-										}
-
-										if (null != chargeDischarge) {
-
-											renderInverterValue(chargeDischarge);
-										}
-
-									} else if ("grid".equalsIgnoreCase(args[4])) {
-
-										V1ImportExport grid = today.getGrid();
-
-										if (args.length > 5) {
-
-											if ("import".equalsIgnoreCase(args[5])) {
-
-												System.out.println(grid.getImp());
-												grid = null;
-
-											} else if ("export".equalsIgnoreCase(args[5])) {
-
-												System.out.println(grid.getExport());
-												grid = null;
-											}
-										}
-
-										if (null != grid) {
-
-											renderInverterValue(grid);
-										}
-									}
-								}
-							}
-
-						} else if ("settings".equalsIgnoreCase(args[2])) {
-
-							if (args.length < 4) {
-
-								V1DataSettings dataSettings = getV1InverterSettings();
-
-								renderInverterValue(dataSettings);
-
-							} else if ("devices".equalsIgnoreCase(args[3])) {
-
-								V1CommunicationDeviceData data = getV1CommunicationDevices("");
-
-								renderInverterValue(data);
-							}
-
-						} else if ("macro".equalsIgnoreCase(args[2])) {
-
-							// inverter macro X [HH:mm HH:mm [ Soc ]]
-							// if Soc not specified or it is "" or < 0 then no change
-							// if Soc > 100 SoC set to 100
-
-							// if no time(s) specified than assume 00:00 implied
-
-							int soc = -1; // implies don't set value
-
-							if (7 == args.length) { // assume a SoC specified or ""
-
-								if (0 != "".compareTo(args[6])) {
-
-									soc = Integer.parseInt(args[6]);
-
-									if (soc > 100) {
-
-										soc = 100;
-									}
-								}
-							}
-
-							if (args.length > 3) {
-
-								if ("A".equalsIgnoreCase(args[3])) {
-
-									// macro A HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(64, args.length < 5 ? "00:00" : args[4]);
-									// AC
-									// Charge
-									// 1
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
-									// AC
-									// Charge
-									// 1
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(101, soc); // AC Charge 1 Upper
-																				// SOC %
-																				// Limit
-									}
-
-								} else if ("B".equalsIgnoreCase(args[3])) {
-
-									// macro B HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									// 28 & 29 or 102 & 103
-
-									postV1InverterSettingWriteString(102, args.length < 5 ? "00:00" : args[4]);
-									// AC
-									// Charge
-									// 2
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
-									// AC
-									// Charge
-									// 2
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(104, soc); // AC Charge 2 Upper
-																				// SOC %
-																				// Limit
-									}
-
-								} else if ("C".equalsIgnoreCase(args[3])) {
-
-									// macro B HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(105, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 3
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 3
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(107, soc); // AC Charge 3 Upper
-																				// SOC %
-																				// Limit
-									}
-
-								} else if ("D".equalsIgnoreCase(args[3])) {
-
-									// macro B HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									// 28 & 29 or 102 & 103
-
-									postV1InverterSettingWriteString(108, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 4
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 4
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(110, soc); // AC Charge 4 Upper
-																				// SOC %
-																				// Limit
-									}
-
-								} else if ("E".equalsIgnoreCase(args[3])) {
-
-									// macro B HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(111, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 5
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 5
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(113, soc); // AC Charge 5 Upper
-																				// SOC %
-																				// Limit
-									}
-								} else if ("F".equalsIgnoreCase(args[3])) {
-
-									// macro F HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(114, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 6
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 6
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(116, soc); // AC Charge 6 Upper
-																				// SOC %
-																				// Limit
-									}
-								} else if ("G".equalsIgnoreCase(args[3])) {
-
-									// macro G HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(117, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 7
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 7
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(119, soc); // AC Charge 7 Upper
-																				// SOC %
-																				// Limit
-									}
-								} else if ("H".equalsIgnoreCase(args[3])) {
-
-									// macro H HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(120, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 8
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 8
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(122, soc); // AC Charge 8 Upper
-																				// SOC %
-																				// Limit
-									}
-								} else if ("I".equalsIgnoreCase(args[3])) {
-
-									// macro I HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(123, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 9
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 9
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(125, soc); // AC Charge 9 Upper
-																				// SOC %
-																				// Limit
-									}
-								} else if ("J".equalsIgnoreCase(args[3])) {
-
-									// macro J HH:mm HH:mm 0-100
-									// set start time, end time and SoC of timed battery charge
-
-									postV1InverterSettingWriteString(126, args.length < 5 ? "00:00" : args[4]); // AC
-									// Charge
-									// 10
-									// Start
-									// Time or
-									// midnight
-
-									postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
-									// Charge
-									// 10
-									// End
-									// Time or
-									// midnight
-
-									if (soc > -1) {
-
-										postV1InverterSettingWrite(128, soc); // AC Charge 10 Upper
-																				// SOC %
-																				// Limit
-									}
-								}
-							}
-
-						} else if ("setting".equalsIgnoreCase(args[2])) {
-
-							if (args.length > 4) {
-
-								Integer id = Integer.parseInt(args[4]);
-
-								if ("read".equalsIgnoreCase(args[3])) {
-
-									System.out.println("read setting with id:" + id);
-
-									Object value = null;
-
-									switch (id) {
-
-									case 17: // Enable AC Charge Upper % Limit
-									case 24: // Enable Eco Mode
-									case 56: // Enable DC Discharge
-									case 66: // AC Charge Enable
-									case 271: // Enable EPS
-									case 380: // Enable Plant EMS Control
-
-										value = postV1InverterSettingReadBoolean(id);
-										break;
-
-									case 28: // AC Charge 2 Start Time
-									case 29: // AC Charge 2 End Time
-									case 41: // DC Discharge 2 Start Time
-									case 42: // DC Discharge 2 End Time
-									case 53: // DC Discharge 1 Start Time
-									case 54: // DC Discharge 1 End Time
-									case 64: // AC Charge 1 Start Time
-									case 65: // AC Charge 1 End Time
-									case 102: // AC Charge 2 Start Time
-									case 103: // AC Charge 2 End Time
-									case 105: // AC Charge 3 Start Time
-									case 106: // AC Charge 3 End Time
-									case 108: // AC Charge 4 Start Time
-									case 109: // AC Charge 4 End Time
-									case 111: // AC Charge 5 Start Time
-									case 112: // AC Charge 5 End Time
-									case 114: // AC Charge 6 Start Time
-									case 115: // AC Charge 6 End Time
-									case 117: // AC Charge 7 Start Time
-									case 118: // AC Charge 7 End Time
-									case 120: // AC Charge 8 Start Time
-									case 121: // AC Charge 8 End Time
-									case 123: // AC Charge 9 Start Time
-									case 124: // AC Charge 9 End Time
-									case 126: // AC Charge 10 Start Time
-									case 127: // AC Charge 10 End Time
-									case 131: // DC Discharge 3 Start Time
-									case 132: // DC Discharge 3 End Time
-									case 134: // DC Discharge 4 Start Time
-									case 135: // DC Discharge 4 End Time
-									case 137: // DC Discharge 5 Start Time
-									case 138: // DC Discharge 5 End Time
-									case 140: // DC Discharge 6 Start Time
-									case 141: // DC Discharge 6 End Time
-									case 143: // DC Discharge 7 Start Time
-									case 144: // DC Discharge 7 End Time
-									case 146: // DC Discharge 8 Start Time
-									case 147: // DC Discharge 8 End Time
-									case 149: // DC Discharge 9 Start Time
-									case 150: // DC Discharge 9 End Time
-									case 152: // DC Discharge 10 Start Time
-									case 153: // DC Discharge 10 End Time
-									case 155: // Pause Battery Start Time
-									case 156: // Pause Battery End Time
-									case 265: // Export Power Priority
-									case 384: // Discharge Start Time Slot 1
-									case 385: // Discharge End Time Slot 1
-									case 387: // Discharge Start Time Slot 2
-									case 388: // Discharge End Time Slot 2
-									case 390: // Discharge Start Time Slot 3
-									case 391: // Discharge End Time Slot 3
-									case 393: // Charge Start Time Slot 1
-									case 394: // Charge End Time Slot 1
-									case 396: // Charge Start Time Slot 2
-									case 397: // Charge End Time Slot 2
-									case 399: // Charge Start Time Slot 3
-									case 400: // Charge End Time Slot 3
-
-										value = postV1InverterSettingReadString(id);
-										break;
-
-									case 72: // Battery Charge Power
-									case 73: // Battery Discharge Power
-									default:
-										value = postV1InverterSettingReadInteger(id);
-										break;
-									}
-
-									System.out.println("response is: ");
-
-									renderInverterValue(value);
-
-								} else if ("write".equalsIgnoreCase(args[3]) && args.length > 5) {
-
-									System.out.println("write setting with id:" + id + " new value:" + args[5]);
-
-									Object value = null;
-
-									switch (id) {
-
-									case 17: // Enable AC Charge Upper % Limit
-									case 24: // Enable Eco Mode
-									case 56: // Enable DC Discharge
-									case 66: // AC Charge Enable
-									case 271: // Enable EPS
-									case 380: // Enable Plant EMS Control
-
-										Boolean bool = Boolean.parseBoolean(args[5]);
-
-										value = postV1InverterSettingWriteBoolean(id, bool);
-										break;
-
-									case 28: // AC Charge 2 Start Time
-									case 29: // AC Charge 2 End Time
-									case 41: // DC Discharge 2 Start Time
-									case 42: // DC Discharge 2 End Time
-									case 53: // DC Discharge 1 Start Time
-									case 54: // DC Discharge 1 End Time
-									case 64: // AC Charge 1 Start Time
-									case 65: // AC Charge 1 End Time
-									case 102: // AC Charge 2 Start Time
-									case 103: // AC Charge 2 End Time
-									case 105: // AC Charge 3 Start Time
-									case 106: // AC Charge 3 End Time
-									case 108: // AC Charge 4 Start Time
-									case 109: // AC Charge 4 End Time
-									case 111: // AC Charge 5 Start Time
-									case 112: // AC Charge 5 End Time
-									case 114: // AC Charge 6 Start Time
-									case 115: // AC Charge 6 End Time
-									case 117: // AC Charge 7 Start Time
-									case 118: // AC Charge 7 End Time
-									case 120: // AC Charge 8 Start Time
-									case 121: // AC Charge 8 End Time
-									case 123: // AC Charge 9 Start Time
-									case 124: // AC Charge 9 End Time
-									case 126: // AC Charge 10 Start Time
-									case 127: // AC Charge 10 End Time
-									case 131: // DC Discharge 3 Start Time
-									case 132: // DC Discharge 3 End Time
-									case 134: // DC Discharge 4 Start Time
-									case 135: // DC Discharge 4 End Time
-									case 137: // DC Discharge 5 Start Time
-									case 138: // DC Discharge 5 End Time
-									case 140: // DC Discharge 6 Start Time
-									case 141: // DC Discharge 6 End Time
-									case 143: // DC Discharge 7 Start Time
-									case 144: // DC Discharge 7 End Time
-									case 146: // DC Discharge 8 Start Time
-									case 147: // DC Discharge 8 End Time
-									case 149: // DC Discharge 9 Start Time
-									case 150: // DC Discharge 9 End Time
-									case 152: // DC Discharge 10 Start Time
-									case 153: // DC Discharge 10 End Time
-									case 155: // Pause Battery Start Time
-									case 156: // Pause Battery End Time
-									case 265: // Export Power Priority
-									case 384: // Discharge Start Time Slot 1
-									case 385: // Discharge End Time Slot 1
-									case 387: // Discharge Start Time Slot 2
-									case 388: // Discharge End Time Slot 2
-									case 390: // Discharge Start Time Slot 3
-									case 391: // Discharge End Time Slot 3
-									case 393: // Charge Start Time Slot 1
-									case 394: // Charge End Time Slot 1
-									case 396: // Charge Start Time Slot 2
-									case 397: // Charge End Time Slot 2
-									case 399: // Charge Start Time Slot 3
-									case 400: // Charge End Time Slot 3
-
-										String string = args[5];
-
-										value = postV1InverterSettingWriteString(id, string);
-										break;
-
-									case 72: // Battery Charge Power
-									case 73: // Battery Discharge Power
-
-									case 101: // AC Charge 1 Upper SOC % Limit
-									case 104: // AC Charge 2 Upper SOC % Limit
-									case 107: // AC Charge 3 Upper SOC % Limit
-									case 110: // AC Charge 4 Upper SOC % Limit
-									case 113: // AC Charge 5 Upper SOC % Limit
-									case 116: // AC Charge 6 Upper SOC % Limit
-									case 119: // AC Charge 7 Upper SOC % Limit
-									case 122: // AC Charge 8 Upper SOC % Limit
-									case 125: // AC Charge 9 Upper SOC % Limit
-									case 128: // AC Charge 10 Upper SOC % Limit
-
-									default:
-										Integer integer = Integer.parseInt(args[5]);
-
-										value = postV1InverterSettingWrite(id, integer);
-										break;
-									}
-
-									System.out.println("response is: ");
-
-									renderInverterValue(value);
-								}
-							}
-						}
-					}
-				}
-
-				System.exit(0);
-			}
-
-			if (null != alias && properties.containsKey(alias)) {
-
-//				System.out.println("Device <" + alias + ">");
-
-				List<V1TimeAndPower> cacheNewestFirst = null;
-
-				String uuid = properties.getProperty(alias);
-
-				String cacheName = uuid + ".tmp";
-
-				V1SmartDeviceData data = null;
-
-				List<V1TimeAndPower> cacheOldestFirst = new ArrayList<V1TimeAndPower>();
-
-				File fileCache = new File(cacheName);
-
-				if (fileCache.exists()) {
-
-					// if the file exists assume it has data starting at the oldest available
-					// chronologically but it won't necessarily have the latest available data
-
-					BufferedReader br = new BufferedReader(new FileReader(fileCache));
-
-					String line = null;
-
-					while (null != (line = br.readLine())) {
-
-						String[] fields = line.split(" ");
-
-						V1TimeAndPower entry = new V1TimeAndPower();
-
-						entry.setTime(fields[0]);
-
-						entry.setPower("null".equals(fields[1]) ? null : Float.valueOf(fields[1]));
-
-						cacheOldestFirst.add(entry);
-					}
-
-					br.close();
-
-					// find youngest entry
-
-					V1TimeAndPower timeAndPowerYoungest = cacheOldestFirst.get(cacheOldestFirst.size() - 1);
-
-					OffsetDateTime odtYoungest = OffsetDateTime.parse(timeAndPowerYoungest.getTime(),
-							defaultDateTimeFormatter);
-
-					// now via GE API get recent data page by page adding noting anything that is
-					// newer than our existing cacheOldestFirst because that won't be in our disk
-					// cache
-
-					List<V1TimeAndPower> recent = new ArrayList<V1TimeAndPower>();
-
-					boolean done = false;
-
-					Integer page = 0;
-
-					do {
-
-						page++;
-
-						V1SmartDeviceData sample = getV1SmartDeviceData(uuid, page, pageSize);
-
-						List<V1TimeAndPower> testList = sample.getTimeAndPower();
-
-						for (V1TimeAndPower test : testList) {
-
-							OffsetDateTime odtTest = OffsetDateTime.parse(test.getTime(), defaultDateTimeFormatter);
-
-							if (odtTest.isAfter(odtYoungest)) {
-
-								recent.add(0, test); // put each successive older item at the start of list so the
-								// latest remains in highest element
-
-							} else {
-
-								// we have found enough new entries to add to the cache
-
-								done = true;
-								break;
-							}
-						}
-
-						if (sample.getMeta().getLastPage() == page) {
-
-							done = true;
-						}
-
-					} while (!done);
-
-					// update the cache with the recent data
-
-					cacheOldestFirst.addAll(recent);
-
-					// append to fileCache just the recent stuff
-
-					FileWriter fw = new FileWriter(fileCache, true);
-
-					BufferedWriter bw = new BufferedWriter(fw);
-
-					for (V1TimeAndPower entry : recent) {
-
-						bw.append(entry.getTime());
-						bw.append(" ");
-						bw.append(String.valueOf(entry.getPower()));
-						bw.append("\n");
-					}
-
-					bw.close();
-					fw.close();
-
-					// now reverse the cache to match the ordering returned by the GE API
-
-					cacheNewestFirst = reverse(cacheOldestFirst);
-
-				} else {
-
-					// we don't have a cache file for this uuid
-					// get all available datapoints
-					// the GE API returns the data newest first/ oldest last
-
-					cacheNewestFirst = processDeviceDataByAlias(alias, null, null, ourZoneId, null, true);
-
-					data = new V1SmartDeviceData();
-
-					data.setTimeAndPower(cacheNewestFirst);
-
-					// we store the datapoint cache on disk with newest last deliberately
-					// so that we an update it next time with an append mode
-
-					cacheOldestFirst = reverse(cacheNewestFirst);
-
-					FileWriter fw = new FileWriter(fileCache, true);
-
-					BufferedWriter bw = new BufferedWriter(fw);
-
-					for (V1TimeAndPower entry : cacheOldestFirst) {
-
-						bw.append(entry.getTime());
-						bw.append(" ");
-						bw.append(String.valueOf(entry.getPower()));
-						bw.append("\n");
-					}
-
-					bw.close();
-					fw.close();
-				}
-
-				if (null == from && null == to) {
-
-					// analyse today, yesterday, past 7 days, past 30 days
-
-					OffsetDateTime now = OffsetDateTime.now();
-
-					OffsetDateTime todayBegin = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
-					OffsetDateTime todayEnd = now.withHour(23).withMinute(59).withSecond(59).withNano(0);
-
-					System.out.println("\nToday:");
-					processDeviceDataByAlias(alias, todayBegin, todayEnd, ourZoneId, cacheNewestFirst, true);
-
-					OffsetDateTime yesterdayBegin = todayBegin.minusDays(1);
-
-					System.out.println("\nYesterday:");
-					processDeviceDataByAlias(alias, yesterdayBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
-
-					OffsetDateTime pastSevenDaysBegin = todayBegin.minusDays(7);
-
-					System.out.println("\nPast 7 days:");
-					processDeviceDataByAlias(alias, pastSevenDaysBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
-
-					OffsetDateTime pastThirtyDaysBegin = todayBegin.minusDays(30);
-					System.out.println("\nPast 30 days:");
-
-					processDeviceDataByAlias(alias, pastThirtyDaysBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
-
-				} else {
-
-					processDeviceDataByAlias(alias, from, to, ourZoneId, cacheNewestFirst, false);
-				}
-
-			} else {
+			if (null == alias) {
 
 				for (V1SmartDevice smartDevice : getListOfSmartDevice()) {
 
@@ -1076,14 +200,901 @@ public class Plugs {
 
 					System.out.println(key + "=" + smartDevice.getUuid());
 				}
+
+			} else {
+
+				if (0 == "notification".compareTo(alias) || 0 == "inverter".compareTo(alias)) {
+
+					if (0 == "notification".compareTo(alias)) {
+
+						OffsetDateTime odt = OffsetDateTime.ofInstant(Instant.now(), ourZoneId);
+
+						postV1Notification("The OffsetDateTime is " + odt.format(defaultDateTimeFormatter));
+
+					} else if (0 == "inverter".compareTo(alias)) {
+
+						inverter(args);
+					}
+
+					System.exit(0);
+				}
+
+				if (properties.containsKey(alias)) {
+
+					smartDevice(alias, from, to, ourZoneId);
+
+				} else {
+
+					System.out.println("Unknown smart device " + alias);
+				}
 			}
 
-		} catch (
-
-		Exception e) {
+		} catch (Exception e) {
 
 			e.printStackTrace();
+		}
 
+	}
+
+	private static void smartDevice(String alias, OffsetDateTime from, OffsetDateTime to, ZoneId ourZoneId)
+			throws MalformedURLException, IOException, InterruptedException {
+		List<V1TimeAndPower> cacheNewestFirst = null;
+
+		String uuid = properties.getProperty(alias);
+
+		String cacheName = uuid + ".tmp";
+
+		V1SmartDeviceData data = null;
+
+		List<V1TimeAndPower> cacheOldestFirst = new ArrayList<V1TimeAndPower>();
+
+		File fileCache = new File(cacheName);
+
+		if (fileCache.exists()) {
+
+			// if the file exists assume it has data starting at the oldest available
+			// chronologically but it won't necessarily have the latest available data
+
+			BufferedReader br = new BufferedReader(new FileReader(fileCache));
+
+			String line = null;
+
+			while (null != (line = br.readLine())) {
+
+				String[] fields = line.split(" ");
+
+				V1TimeAndPower entry = new V1TimeAndPower();
+
+				entry.setTime(fields[0]);
+
+				entry.setPower("null".equals(fields[1]) ? null : Float.valueOf(fields[1]));
+
+				cacheOldestFirst.add(entry);
+			}
+
+			br.close();
+
+			// find youngest entry
+
+			V1TimeAndPower timeAndPowerYoungest = cacheOldestFirst.get(cacheOldestFirst.size() - 1);
+
+			OffsetDateTime odtYoungest = OffsetDateTime.parse(timeAndPowerYoungest.getTime(), defaultDateTimeFormatter);
+
+			// now via GE API get recent data page by page adding noting anything that is
+			// newer than our existing cacheOldestFirst because that won't be in our disk
+			// cache
+
+			List<V1TimeAndPower> recent = new ArrayList<V1TimeAndPower>();
+
+			boolean done = false;
+
+			Integer page = 0;
+
+			do {
+
+				page++;
+
+				V1SmartDeviceData sample = getV1SmartDeviceData(uuid, page, pageSize);
+
+				List<V1TimeAndPower> testList = sample.getTimeAndPower();
+
+				for (V1TimeAndPower test : testList) {
+
+					OffsetDateTime odtTest = OffsetDateTime.parse(test.getTime(), defaultDateTimeFormatter);
+
+					if (odtTest.isAfter(odtYoungest)) {
+
+						recent.add(0, test); // put each successive older item at the start of list so the
+						// latest remains in highest element
+
+					} else {
+
+						// we have found enough new entries to add to the cache
+
+						done = true;
+						break;
+					}
+				}
+
+				if (sample.getMeta().getLastPage() == page) {
+
+					done = true;
+				}
+
+			} while (!done);
+
+			// update the cache with the recent data
+
+			cacheOldestFirst.addAll(recent);
+
+			// append to fileCache just the recent stuff
+
+			FileWriter fw = new FileWriter(fileCache, true);
+
+			BufferedWriter bw = new BufferedWriter(fw);
+
+			for (V1TimeAndPower entry : recent) {
+
+				bw.append(entry.getTime());
+				bw.append(" ");
+				bw.append(String.valueOf(entry.getPower()));
+				bw.append("\n");
+			}
+
+			bw.close();
+			fw.close();
+
+			// now reverse the cache to match the ordering returned by the GE API
+
+			cacheNewestFirst = reverse(cacheOldestFirst);
+
+		} else {
+
+			// we don't have a cache file for this uuid
+			// get all available datapoints
+			// the GE API returns the data newest first/ oldest last
+
+			cacheNewestFirst = processDeviceDataByAlias(alias, null, null, ourZoneId, null, true);
+
+			data = new V1SmartDeviceData();
+
+			data.setTimeAndPower(cacheNewestFirst);
+
+			// we store the datapoint cache on disk with newest last deliberately
+			// so that we an update it next time with an append mode
+
+			cacheOldestFirst = reverse(cacheNewestFirst);
+
+			FileWriter fw = new FileWriter(fileCache, true);
+
+			BufferedWriter bw = new BufferedWriter(fw);
+
+			for (V1TimeAndPower entry : cacheOldestFirst) {
+
+				bw.append(entry.getTime());
+				bw.append(" ");
+				bw.append(String.valueOf(entry.getPower()));
+				bw.append("\n");
+			}
+
+			bw.close();
+			fw.close();
+		}
+
+		if (null == from && null == to) {
+
+			// analyse today, yesterday, past 7 days, past 30 days
+
+			OffsetDateTime now = OffsetDateTime.now();
+
+			OffsetDateTime todayBegin = now.withHour(0).withMinute(0).withSecond(0).withNano(0);
+			OffsetDateTime todayEnd = now.withHour(23).withMinute(59).withSecond(59).withNano(0);
+
+			System.out.println("\nToday:");
+			processDeviceDataByAlias(alias, todayBegin, todayEnd, ourZoneId, cacheNewestFirst, true);
+
+			OffsetDateTime yesterdayBegin = todayBegin.minusDays(1);
+
+			System.out.println("\nYesterday:");
+			processDeviceDataByAlias(alias, yesterdayBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
+
+			OffsetDateTime pastSevenDaysBegin = todayBegin.minusDays(7);
+
+			System.out.println("\nPast 7 days:");
+			processDeviceDataByAlias(alias, pastSevenDaysBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
+
+			OffsetDateTime pastThirtyDaysBegin = todayBegin.minusDays(30);
+			System.out.println("\nPast 30 days:");
+
+			processDeviceDataByAlias(alias, pastThirtyDaysBegin, todayBegin, ourZoneId, cacheNewestFirst, true);
+
+		} else {
+
+			processDeviceDataByAlias(alias, from, to, ourZoneId, cacheNewestFirst, false);
+		}
+
+	}
+
+	private static void inverter(String[] args) throws MalformedURLException, IOException, URISyntaxException {
+
+		if (2 == args.length) {
+
+			// default - no further parameters
+
+			V1DataMeter dataMeter = getV1InverterMeter();
+
+			renderInverterValue(dataMeter);
+
+		} else if (args.length > 2) {
+
+			if ("presets".equalsIgnoreCase(args[2])) {
+
+				V1DataDescriptor v1Data = getV1InverterPresets(1, 50);
+
+				renderInverterValue(v1Data);
+
+			} else if ("system".equalsIgnoreCase(args[2])) {
+
+				V1SystemData dataSystemData = getV1InverterSystem().getData();
+
+				if (args.length > 3) {
+
+					if ("battery".equalsIgnoreCase(args[3])) {
+
+						V1BatteryData batteryData = dataSystemData.getBattery();
+
+						if (args.length > 4) {
+
+							if ("percent".equalsIgnoreCase(args[4])) {
+
+								System.out.println(batteryData.getPercent());
+
+							} else if ("power".equalsIgnoreCase(args[4])) {
+
+								System.out.println(batteryData.getPower());
+
+							} else if ("temperature".equalsIgnoreCase(args[4])) {
+
+								System.out.println(batteryData.getTemperature());
+							}
+
+						} else {
+
+							renderInverterValue(batteryData);
+						}
+
+					} else if ("inverter".equalsIgnoreCase(args[3])) {
+
+						V1Inverter inverter = dataSystemData.getInverter();
+
+						if (args.length > 4) {
+
+							if ("power".equalsIgnoreCase(args[4])) {
+
+								System.out.println(inverter.getPower());
+
+							} else if ("temperature".equalsIgnoreCase(args[4])) {
+
+								System.out.println(inverter.getTemperature());
+
+							} else if ("eps_power".equalsIgnoreCase(args[4])) {
+
+								System.out.println(inverter.getEpsPower());
+
+							} else if ("output_voltage".equalsIgnoreCase(args[4])) {
+
+								System.out.println(inverter.getOutputVoltage());
+
+							} else if ("output_frequency".equalsIgnoreCase(args[4])) {
+
+								System.out.println(inverter.getOutputFrequency());
+
+							} else {
+
+								renderInverterValue(inverter);
+							}
+
+						} else {
+
+							renderInverterValue(inverter);
+						}
+
+					} else {
+
+						renderInverterValue(dataSystemData);
+					}
+				}
+
+			} else if ("meter".equalsIgnoreCase(args[2])) {
+
+				V1DataMeter dataMeter = getV1InverterMeter();
+
+				if (3 == args.length) {
+
+					renderInverterValue(dataMeter);
+
+				} else if (args.length > 3 && "today".equalsIgnoreCase(args[3])) {
+
+					V1Meters today = dataMeter.getData().getToday();
+
+					if (4 == args.length) {
+
+						renderInverterValue(today);
+
+					} else if (args.length > 4) {
+
+						if ("ac_charge".equalsIgnoreCase(args[4])) {
+
+							System.out.println(today.getAcCharge());
+
+						} else if ("consumption".equalsIgnoreCase(args[4])) {
+
+							System.out.println(today.getConsumption());
+
+						} else if ("solar".equalsIgnoreCase(args[4])) {
+
+							System.out.println(today.getSolar());
+
+						} else if ("battery".equalsIgnoreCase(args[4])) {
+
+							V1ChargeDischarge chargeDischarge = today.getBattery();
+
+							if (args.length > 5) {
+
+								if ("charge".equalsIgnoreCase(args[5])) {
+
+									System.out.println(chargeDischarge.getCharge());
+									chargeDischarge = null;
+
+								} else if ("discharge".equalsIgnoreCase(args[5])) {
+
+									System.out.println(chargeDischarge.getDischarge());
+									chargeDischarge = null;
+								}
+							}
+
+							if (null != chargeDischarge) {
+
+								renderInverterValue(chargeDischarge);
+							}
+
+						} else if ("grid".equalsIgnoreCase(args[4])) {
+
+							V1ImportExport grid = today.getGrid();
+
+							if (args.length > 5) {
+
+								if ("import".equalsIgnoreCase(args[5])) {
+
+									System.out.println(grid.getImp());
+									grid = null;
+
+								} else if ("export".equalsIgnoreCase(args[5])) {
+
+									System.out.println(grid.getExport());
+									grid = null;
+								}
+							}
+
+							if (null != grid) {
+
+								renderInverterValue(grid);
+							}
+						}
+					}
+				}
+
+			} else if ("settings".equalsIgnoreCase(args[2])) {
+
+				if (args.length < 4) {
+
+					V1DataSettings dataSettings = getV1InverterSettings();
+
+					renderInverterValue(dataSettings);
+
+				} else if ("devices".equalsIgnoreCase(args[3])) {
+
+					V1CommunicationDeviceData data = getV1CommunicationDevices("");
+
+					renderInverterValue(data);
+				}
+
+			} else if ("macro".equalsIgnoreCase(args[2])) {
+
+				// inverter macro X [HH:mm HH:mm [ Soc ]]
+				// if Soc not specified or it is "" or < 0 then no change
+				// if Soc > 100 SoC set to 100
+
+				// if no time(s) specified than assume 00:00 implied
+
+				int soc = -1; // implies don't set value
+
+				if (7 == args.length) { // assume a SoC specified or ""
+
+					if (0 != "".compareTo(args[6])) {
+
+						soc = Integer.parseInt(args[6]);
+
+						if (soc > 100) {
+
+							soc = 100;
+						}
+					}
+				}
+
+				if (args.length > 3) {
+
+					if ("A".equalsIgnoreCase(args[3])) {
+
+						// macro A HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(64, args.length < 5 ? "00:00" : args[4]);
+						// AC
+						// Charge
+						// 1
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
+						// AC
+						// Charge
+						// 1
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(101, soc); // AC Charge 1 Upper
+																	// SOC %
+																	// Limit
+						}
+
+					} else if ("B".equalsIgnoreCase(args[3])) {
+
+						// macro B HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						// 28 & 29 or 102 & 103
+
+						postV1InverterSettingWriteString(102, args.length < 5 ? "00:00" : args[4]);
+						// AC
+						// Charge
+						// 2
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
+						// AC
+						// Charge
+						// 2
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(104, soc); // AC Charge 2 Upper
+																	// SOC %
+																	// Limit
+						}
+
+					} else if ("C".equalsIgnoreCase(args[3])) {
+
+						// macro B HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(105, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 3
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 3
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(107, soc); // AC Charge 3 Upper
+																	// SOC %
+																	// Limit
+						}
+
+					} else if ("D".equalsIgnoreCase(args[3])) {
+
+						// macro B HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						// 28 & 29 or 102 & 103
+
+						postV1InverterSettingWriteString(108, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 4
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 4
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(110, soc); // AC Charge 4 Upper
+																	// SOC %
+																	// Limit
+						}
+
+					} else if ("E".equalsIgnoreCase(args[3])) {
+
+						// macro B HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(111, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 5
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 5
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(113, soc); // AC Charge 5 Upper
+																	// SOC %
+																	// Limit
+						}
+					} else if ("F".equalsIgnoreCase(args[3])) {
+
+						// macro F HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(114, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 6
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 6
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(116, soc); // AC Charge 6 Upper
+																	// SOC %
+																	// Limit
+						}
+					} else if ("G".equalsIgnoreCase(args[3])) {
+
+						// macro G HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(117, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 7
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 7
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(119, soc); // AC Charge 7 Upper
+																	// SOC %
+																	// Limit
+						}
+					} else if ("H".equalsIgnoreCase(args[3])) {
+
+						// macro H HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(120, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 8
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 8
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(122, soc); // AC Charge 8 Upper
+																	// SOC %
+																	// Limit
+						}
+					} else if ("I".equalsIgnoreCase(args[3])) {
+
+						// macro I HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(123, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 9
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 9
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(125, soc); // AC Charge 9 Upper
+																	// SOC %
+																	// Limit
+						}
+					} else if ("J".equalsIgnoreCase(args[3])) {
+
+						// macro J HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(126, args.length < 5 ? "00:00" : args[4]); // AC
+						// Charge
+						// 10
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
+						// Charge
+						// 10
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(128, soc); // AC Charge 10 Upper
+																	// SOC %
+																	// Limit
+						}
+					}
+				}
+
+			} else if ("setting".equalsIgnoreCase(args[2])) {
+
+				if (args.length > 4) {
+
+					Integer id = Integer.parseInt(args[4]);
+
+					if ("read".equalsIgnoreCase(args[3])) {
+
+						System.out.println("read setting with id:" + id);
+
+						Object value = null;
+
+						switch (id) {
+
+						case 17: // Enable AC Charge Upper % Limit
+						case 24: // Enable Eco Mode
+						case 56: // Enable DC Discharge
+						case 66: // AC Charge Enable
+						case 271: // Enable EPS
+						case 380: // Enable Plant EMS Control
+
+							value = postV1InverterSettingReadBoolean(id);
+							break;
+
+						case 28: // AC Charge 2 Start Time
+						case 29: // AC Charge 2 End Time
+						case 41: // DC Discharge 2 Start Time
+						case 42: // DC Discharge 2 End Time
+						case 53: // DC Discharge 1 Start Time
+						case 54: // DC Discharge 1 End Time
+						case 64: // AC Charge 1 Start Time
+						case 65: // AC Charge 1 End Time
+						case 102: // AC Charge 2 Start Time
+						case 103: // AC Charge 2 End Time
+						case 105: // AC Charge 3 Start Time
+						case 106: // AC Charge 3 End Time
+						case 108: // AC Charge 4 Start Time
+						case 109: // AC Charge 4 End Time
+						case 111: // AC Charge 5 Start Time
+						case 112: // AC Charge 5 End Time
+						case 114: // AC Charge 6 Start Time
+						case 115: // AC Charge 6 End Time
+						case 117: // AC Charge 7 Start Time
+						case 118: // AC Charge 7 End Time
+						case 120: // AC Charge 8 Start Time
+						case 121: // AC Charge 8 End Time
+						case 123: // AC Charge 9 Start Time
+						case 124: // AC Charge 9 End Time
+						case 126: // AC Charge 10 Start Time
+						case 127: // AC Charge 10 End Time
+						case 131: // DC Discharge 3 Start Time
+						case 132: // DC Discharge 3 End Time
+						case 134: // DC Discharge 4 Start Time
+						case 135: // DC Discharge 4 End Time
+						case 137: // DC Discharge 5 Start Time
+						case 138: // DC Discharge 5 End Time
+						case 140: // DC Discharge 6 Start Time
+						case 141: // DC Discharge 6 End Time
+						case 143: // DC Discharge 7 Start Time
+						case 144: // DC Discharge 7 End Time
+						case 146: // DC Discharge 8 Start Time
+						case 147: // DC Discharge 8 End Time
+						case 149: // DC Discharge 9 Start Time
+						case 150: // DC Discharge 9 End Time
+						case 152: // DC Discharge 10 Start Time
+						case 153: // DC Discharge 10 End Time
+						case 155: // Pause Battery Start Time
+						case 156: // Pause Battery End Time
+						case 265: // Export Power Priority
+						case 384: // Discharge Start Time Slot 1
+						case 385: // Discharge End Time Slot 1
+						case 387: // Discharge Start Time Slot 2
+						case 388: // Discharge End Time Slot 2
+						case 390: // Discharge Start Time Slot 3
+						case 391: // Discharge End Time Slot 3
+						case 393: // Charge Start Time Slot 1
+						case 394: // Charge End Time Slot 1
+						case 396: // Charge Start Time Slot 2
+						case 397: // Charge End Time Slot 2
+						case 399: // Charge Start Time Slot 3
+						case 400: // Charge End Time Slot 3
+
+							value = postV1InverterSettingReadString(id);
+							break;
+
+						case 72: // Battery Charge Power
+						case 73: // Battery Discharge Power
+						default:
+							value = postV1InverterSettingReadInteger(id);
+							break;
+						}
+
+						System.out.println("response is: ");
+
+						renderInverterValue(value);
+
+					} else if ("write".equalsIgnoreCase(args[3]) && args.length > 5) {
+
+						System.out.println("write setting with id:" + id + " new value:" + args[5]);
+
+						Object value = null;
+
+						switch (id) {
+
+						case 17: // Enable AC Charge Upper % Limit
+						case 24: // Enable Eco Mode
+						case 56: // Enable DC Discharge
+						case 66: // AC Charge Enable
+						case 271: // Enable EPS
+						case 380: // Enable Plant EMS Control
+
+							Boolean bool = Boolean.parseBoolean(args[5]);
+
+							value = postV1InverterSettingWriteBoolean(id, bool);
+							break;
+
+						case 28: // AC Charge 2 Start Time
+						case 29: // AC Charge 2 End Time
+						case 41: // DC Discharge 2 Start Time
+						case 42: // DC Discharge 2 End Time
+						case 53: // DC Discharge 1 Start Time
+						case 54: // DC Discharge 1 End Time
+						case 64: // AC Charge 1 Start Time
+						case 65: // AC Charge 1 End Time
+						case 102: // AC Charge 2 Start Time
+						case 103: // AC Charge 2 End Time
+						case 105: // AC Charge 3 Start Time
+						case 106: // AC Charge 3 End Time
+						case 108: // AC Charge 4 Start Time
+						case 109: // AC Charge 4 End Time
+						case 111: // AC Charge 5 Start Time
+						case 112: // AC Charge 5 End Time
+						case 114: // AC Charge 6 Start Time
+						case 115: // AC Charge 6 End Time
+						case 117: // AC Charge 7 Start Time
+						case 118: // AC Charge 7 End Time
+						case 120: // AC Charge 8 Start Time
+						case 121: // AC Charge 8 End Time
+						case 123: // AC Charge 9 Start Time
+						case 124: // AC Charge 9 End Time
+						case 126: // AC Charge 10 Start Time
+						case 127: // AC Charge 10 End Time
+						case 131: // DC Discharge 3 Start Time
+						case 132: // DC Discharge 3 End Time
+						case 134: // DC Discharge 4 Start Time
+						case 135: // DC Discharge 4 End Time
+						case 137: // DC Discharge 5 Start Time
+						case 138: // DC Discharge 5 End Time
+						case 140: // DC Discharge 6 Start Time
+						case 141: // DC Discharge 6 End Time
+						case 143: // DC Discharge 7 Start Time
+						case 144: // DC Discharge 7 End Time
+						case 146: // DC Discharge 8 Start Time
+						case 147: // DC Discharge 8 End Time
+						case 149: // DC Discharge 9 Start Time
+						case 150: // DC Discharge 9 End Time
+						case 152: // DC Discharge 10 Start Time
+						case 153: // DC Discharge 10 End Time
+						case 155: // Pause Battery Start Time
+						case 156: // Pause Battery End Time
+						case 265: // Export Power Priority
+						case 384: // Discharge Start Time Slot 1
+						case 385: // Discharge End Time Slot 1
+						case 387: // Discharge Start Time Slot 2
+						case 388: // Discharge End Time Slot 2
+						case 390: // Discharge Start Time Slot 3
+						case 391: // Discharge End Time Slot 3
+						case 393: // Charge Start Time Slot 1
+						case 394: // Charge End Time Slot 1
+						case 396: // Charge Start Time Slot 2
+						case 397: // Charge End Time Slot 2
+						case 399: // Charge Start Time Slot 3
+						case 400: // Charge End Time Slot 3
+
+							String string = args[5];
+
+							value = postV1InverterSettingWriteString(id, string);
+							break;
+
+						case 72: // Battery Charge Power
+						case 73: // Battery Discharge Power
+
+						case 101: // AC Charge 1 Upper SOC % Limit
+						case 104: // AC Charge 2 Upper SOC % Limit
+						case 107: // AC Charge 3 Upper SOC % Limit
+						case 110: // AC Charge 4 Upper SOC % Limit
+						case 113: // AC Charge 5 Upper SOC % Limit
+						case 116: // AC Charge 6 Upper SOC % Limit
+						case 119: // AC Charge 7 Upper SOC % Limit
+						case 122: // AC Charge 8 Upper SOC % Limit
+						case 125: // AC Charge 9 Upper SOC % Limit
+						case 128: // AC Charge 10 Upper SOC % Limit
+
+						default:
+							Integer integer = Integer.parseInt(args[5]);
+
+							value = postV1InverterSettingWrite(id, integer);
+							break;
+						}
+
+						System.out.println("response is: ");
+
+						renderInverterValue(value);
+					}
+				}
+			}
 		}
 	}
 
