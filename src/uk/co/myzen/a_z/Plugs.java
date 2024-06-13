@@ -21,6 +21,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -1791,6 +1793,66 @@ public class Plugs {
 		return postRequest(url, true, tokenKey, body);
 	}
 
+	/*
+	 * throws IOException if token has expired or is invalid
+	 * 
+	 */
+	private static String verifiedBearerToken(String tokenKey) throws IOException {
+
+		String tokenValue = properties.getProperty(tokenKey);
+
+		if (null == tokenValue) {
+
+			throw new IOException("no property value for tokenKey " + tokenKey);
+		}
+
+		String[] chunks = tokenValue.split("\\.");
+
+		if (3 != chunks.length) {
+
+			throw new IOException("property value for tokenKey " + tokenKey
+					+ " does not appear to be in format header.payload.signature");
+		}
+
+		Base64.Decoder decoder = Base64.getUrlDecoder();
+
+		String payload = new String(decoder.decode(chunks[1]));
+
+		int p = 6 + payload.indexOf("\"exp\":");
+
+		int q = payload.indexOf(",", p);
+
+		String timestamp = payload.substring(p, q);
+
+		int r = 9 + payload.indexOf("\"scopes\":", q);
+
+		int s = 1 + payload.indexOf("]", q);
+
+		String scopes = payload.substring(r, s);
+
+		Float f = Float.valueOf(timestamp);
+
+		long l = 1000L * f.longValue();
+
+		Date timeWhen = new Date(l);
+
+		Date now = new Date();
+
+		boolean expired = now.after(timeWhen);
+
+		String text = (expired ? "EXCEPTION" : "INFO") + ": Property key '" + tokenKey + "' containing JWT token for "
+				+ scopes + " " + (expired ? "has expired" : "will expire") + " " + timeWhen.toString();
+
+		System.err.println(text);
+
+		if (expired) {
+
+			throw new IOException(text);
+		}
+
+		return tokenValue;
+	}
+
 	private static String getRequest(URL url, boolean authorisationRequired, String tokenKey) throws IOException {
 
 		int status = 0;
@@ -1806,7 +1868,7 @@ public class Plugs {
 
 		if (authorisationRequired) {
 
-			con.setRequestProperty("Authorization", "Bearer " + properties.getProperty(tokenKey));
+			con.setRequestProperty("Authorization", "Bearer " + verifiedBearerToken(tokenKey));
 		}
 
 		try {
