@@ -59,6 +59,10 @@ public class Plugs {
 	@SuppressWarnings("unused")
 	private static final String docsUrl = "https://api.givenergy.cloud/docs/api/v1";
 
+	private static final String context = "\"context\": \"icarus\"";
+
+	private static final String body = "{" + context + "}";
+
 	private static final String baseUrl = "https://api.givenergy.cloud/v1";
 
 	private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36";
@@ -1428,8 +1432,6 @@ public class Plugs {
 	private static V1DataBooleanValue postV1InverterSettingReadBoolean(int id)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-		String body = "{\"context\": \"consequatur\"}";
-
 		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
 				+ String.valueOf(id) + "/read"), "inverter", body);
 
@@ -1452,8 +1454,6 @@ public class Plugs {
 	private static V1DataIntegerValue postV1InverterSettingReadInteger(int id)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-		String body = "{\"context\": \"consequatur\"}";
-
 		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
 				+ String.valueOf(id) + "/read"), "inverter", body);
 
@@ -1475,8 +1475,6 @@ public class Plugs {
 
 	private static V1DataStringValue postV1InverterSettingReadString(int id)
 			throws MalformedURLException, IOException, URISyntaxException {
-
-		String body = "{\"context\": \"consequatur\"}";
 
 		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
 				+ String.valueOf(id) + "/read"), "inverter", body);
@@ -1541,14 +1539,14 @@ public class Plugs {
 
 		V1DataIntegerValue result = null;
 
-		String body = "{\"value\": " + value + "}";
+		String bodyValue = "{\"value\": " + value + ", " + context + "}";
 
 		int count = 0;
 
 		do {
 
 			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-					+ String.valueOf(id) + "/write"), "inverter", body);
+					+ String.valueOf(id) + "/write"), "inverter", bodyValue);
 
 			if (null == json || 0 == json.trim().length()) {
 
@@ -1588,14 +1586,14 @@ public class Plugs {
 
 		V1DataStringValue result = null;
 
-		String body = "{\"value\": \"" + value + "\"}";
+		String bodyValue = "{\"value\": \"" + value + "\"" + ", " + context + "}";
 
 		int count = 0;
 
 		do {
 
 			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-					+ String.valueOf(id) + "/write"), "inverter", body);
+					+ String.valueOf(id) + "/write"), "inverter", bodyValue);
 
 			if (null == json || 0 == json.trim().length()) {
 
@@ -1634,14 +1632,14 @@ public class Plugs {
 
 		V1DataBooleanValue result = null;
 
-		String body = "{\"value\": " + value + "}";
+		String bodyValue = "{\"value\": " + value + ", " + context + "}";
 
 		int count = 0;
 
 		do {
 
 			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-					+ String.valueOf(id) + "/write"), "inverter", body);
+					+ String.valueOf(id) + "/write"), "inverter", bodyValue);
 
 			if (null == json || 0 == json.trim().length()) {
 
