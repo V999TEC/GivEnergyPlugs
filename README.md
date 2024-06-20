@@ -10,7 +10,7 @@ This java code creates a cache in uuid.tmp which reflects the timestamp and powe
 Subsequent requests will maintain the cache while minimising the traffic needed against the GE API for smart plugs.
 
 
-Latest snapshot plugs.jar in __/download/__ or choose release version
+Latest snapshot icarus.jar in __/download/__ or choose release version
 
 ### See download folder for wrapper scripts and latest snapshot prebuilt jar
 Or see https://github.com/V999TEC/GivEnergyPlugs/releases  
@@ -30,7 +30,7 @@ You can generate a GivEnergy API token for your api:smart-device here https://gi
 
 
 Check you API token is good by enumerating all the smart devices as follows
-```java -jar plugs.jar My.properties```
+```java -jar icarus.jar My.properties```
 
 ```
 PlugA=08f6b4f9-0000-4d41-0000-95214d78e740
