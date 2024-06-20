@@ -14,11 +14,11 @@ Latest snapshot plugs.jar in __/download/__ or choose release version
 
 ### See download folder for wrapper scripts and latest snapshot prebuilt jar
 Or see https://github.com/V999TEC/GivEnergyPlugs/releases  
-for complete source code & release version of __plugs.jar__
+for complete source code & release version of __icarus.jar__
 
 ### Syntax
 
-```java -jar plugs.jar property_file_name  [alias [from_timestamp [to_timestamp]]]```
+```java -jar icarus.jar property_file_name  [alias [from_timestamp [to_timestamp]]]```
 
 ### Usage
 Define a property file (such as __My.properties__) for your smart devices containing your generated api:smart-device token for example:
@@ -49,6 +49,8 @@ PlugA=08f6b4f9-0000-4d41-0000-95214d78e740
 PlugB=aba03ce8-0000-41f9-0000-91876bb0cd45
 PlugC=bb1c988e-0000-4ad5-0000-53c5a99f5841
 etc
+
+inverter=insert_api_token_here
 ```
 
 N.B.
@@ -57,13 +59,13 @@ So, for instance, __Washing Machine__ would become __Washing\ Machine=uuid__
 
 Also, when passing parameters containing spaces to the jar, be sure to put them in quotes:
 
-```java -jar plugs.jar My.properties "Washing Machine"```
+```java -jar icarus.jar My.properties "Washing Machine"```
 
 
 ### Example 1   
 Analyse consumption for a device with an alias defined in My.properties for the specified timespan
  
-```java -jar plugs.jar My.properties "plug E" 2023-10-01T05:59:06Z 2023-10-01T06:15:00Z```
+```java -jar icarus.jar My.properties "plug E" 2023-10-01T05:59:06Z 2023-10-01T06:15:00Z```
 ```
 Device <plug E>
 From <2023-10-01T05:59:06Z> to <2023-10-01T06:15Z>
@@ -82,12 +84,12 @@ From <2023-10-01T05:59:06Z> to <2023-10-01T06:15Z>
 ### Example 2   
 Analyse consumption for "plug E" from the specified time until now
  
-```java -jar plugs.jar My.properties "plug E" 2023-10-01T05:59:06Z```
+```java -jar icarus.jar My.properties "plug E" 2023-10-01T05:59:06Z```
 
 ### Example 3   
 Analyse consumption for "plug E" for today, yesterday, past 7 days & past 30 days
  
-```java -jar plugs.jar My.properties "plug E"```
+```java -jar icarus.jar My.properties "plug E"```
 
 ```
 Device <plug E>
@@ -112,5 +114,5 @@ From <2023-09-06T00:00+01:00> to <2023-10-06T00:00+01:00>
 ### Example 4    
 Analyse consumption for "plug E" for all datapoints
  
-```java -jar plugs.jar My.properties "plug E"  1970-01-01T00:00Z```
+```java -jar icarus.jar My.properties "plug E"  1970-01-01T00:00Z```
 
