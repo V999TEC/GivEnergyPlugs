@@ -54,7 +54,7 @@ import v1.V1SmartDevices;
 import v1.V1SystemData;
 import v1.V1TimeAndPower;
 
-public class Plugs {
+public class Icarus {
 
 	@SuppressWarnings("unused")
 	private static final String docsUrl = "https://api.givenergy.cloud/docs/api/v1";

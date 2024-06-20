@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>uk.co.myzen.a_z</groupId>
-  <artifactId>givenergy.smart.plugs</artifactId>
+  <artifactId>givenergy.smart.icarus</artifactId>
   <version>1.0.14-SNAPSHOT</version>
-  <description>Experiments with GivEnergy API for Smart Plugs</description>
+  <description>Experiments with GivEnergy API for Smart Plugs and Inverters</description>
   
     <properties>
 
@@ -46,11 +46,11 @@
                 <descriptorRefs>
                     <descriptorRef>jar-with-dependencies</descriptorRef>
                 </descriptorRefs>
-                <finalName>plugs</finalName>
+                <finalName>icarus</finalName>
                 <appendAssemblyId>false</appendAssemblyId>
                 <archive>
                     <manifest>
-                        <mainClass>uk.co.myzen.a_z.Plugs</mainClass>
+                        <mainClass>uk.co.myzen.a_z.Icarus</mainClass>
                     </manifest>
                 </archive>
             </configuration>
