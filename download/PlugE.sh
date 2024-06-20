@@ -1,4 +1,4 @@
 #!/bin/sh
 
-java -jar plugs.jar ./SwindonIcarus.properties "plug E" $1 $2
+java -jar icarus.jar ./SwindonIcarus.properties "plug E" $1 $2
 
