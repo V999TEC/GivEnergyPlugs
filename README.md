@@ -1,5 +1,5 @@
 # GivEnergy
-## __Experiments with GivEnergy API for Smart Plugs__
+## __Experiments with GivEnergy API for Smart Plugs & Inverters__
 
 There is a wiki giving context about this project here https://github.com/V999TEC/GivEnergyPlugs/wiki/The-Home-of-Icarus  
 
