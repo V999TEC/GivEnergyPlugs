@@ -30,7 +30,11 @@ Key "inverter" value needs to be defined in the property file for GivEnergy API 
 
 ```java -jar icarus.jar ./my.properties inverter  setting write id HH:MM```
 
+### Extended syntax
 
+```java -jar icarus.jar ./my.properties inverter meter [today [ac_charge|consumption|solar|battery [charge|discharge] | grid [import|export]]]```
+
+```java -jar icarus.jar ./my.properties inverter system [battery [percent|power|temperature] |inverter [power|temperature|eps_power_output_voltage|output_frequency]]```
 
 ### Usage
 Define a property file (such as __My.properties__) for your smart devices containing your generated api:smart-device token for example:
