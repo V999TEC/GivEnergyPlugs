@@ -130,7 +130,7 @@ Analyse consumption for "plug E" for all datapoints
 ```java -jar icarus.jar My.properties "plug E"  1970-01-01T00:00Z```
 
 ### Example 5    
-Display all the id values that can be used
+Display all the id values & associated validation rules that can be used
  
 ```java -jar icarus.jar ./my.properties inverter  settings```
 
@@ -139,3 +139,17 @@ Display the AC Charge 1 End Time
  
 ```java -jar icarus.jar ./my.properties inverter setting read 65```
 
+### Example 7    
+Display the battery percentage, power and temperature
+ 
+```java -jar icarus.jar ./my.properties inverter system battery```
+
+### Example 8   
+Display the solar generation for today
+ 
+```java -jar icarus.jar ./my.properties inverter meter today solar```
+
+### Example 9   
+Display the today's grid import
+ 
+```java -jar icarus.jar ./my.properties inverter meter today grid import```
