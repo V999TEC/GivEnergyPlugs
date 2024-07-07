@@ -37,8 +37,9 @@ Define a property file (such as __My.properties__) for your smart devices contai
 
 ```
 smart-device=insert_api_token_here
+inverter=insert_api_token_here
 ```
-You can generate a GivEnergy API token for your api:smart-device here https://givenergy.cloud/account-settings/security
+You can generate a GivEnergy API token for your api:smart-device and/or api:inverter here https://givenergy.cloud/account-settings/security
 
 
 Check you API token is good by enumerating all the smart devices as follows
@@ -127,4 +128,14 @@ From <2023-09-06T00:00+01:00> to <2023-10-06T00:00+01:00>
 Analyse consumption for "plug E" for all datapoints
  
 ```java -jar icarus.jar My.properties "plug E"  1970-01-01T00:00Z```
+
+### Example 5    
+Display all the id values that can be used
+ 
+```java -jar icarus.jar ./my.properties inverter  settings```
+
+### Example 6    
+Display the AC Charge 1 End Time
+ 
+```java -jar icarus.jar ./my.properties inverter setting read 65```
 
