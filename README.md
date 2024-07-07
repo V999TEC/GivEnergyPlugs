@@ -18,7 +18,19 @@ for complete source code & release version of __icarus.jar__
 
 ### Syntax
 
+Key "smart-device" value needs to be defined in the property file for GivEnergy API Token [api:smart-device] for successful use of following option:
+
 ```java -jar icarus.jar property_file_name  [alias [from_timestamp [to_timestamp]]]```
+
+Key "inverter" value needs to be defined in the property file for GivEnergy API Token [api:inverter] for successful use of following options:
+
+```java -jar icarus.jar ./my.properties inverter  settings```
+
+```java -jar icarus.jar ./my.properties inverter  setting read id```
+
+```java -jar icarus.jar ./my.properties inverter  setting write id HH:MM```
+
+
 
 ### Usage
 Define a property file (such as __My.properties__) for your smart devices containing your generated api:smart-device token for example:
