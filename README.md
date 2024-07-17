@@ -154,6 +154,17 @@ Display the solar generation for today
 ```java -jar icarus.jar ./my.properties inverter meter today solar```
 
 ### Example 9   
+Get the grid related data in csv format for the specified date and dump it in file "2024-07-01.csv"
+ 
+```java -jar icarus.jar ./my.properties inverter system internal 2024-07-01 grid csv file```
+
+### Example 10   
+Get the grid related data in json format for the specified date and display to stdout
+ 
+```java -jar icarus.jar ./my.properties inverter system internal 2024-07-01 grid```
+
+
+### Example 9   
 Display the today's grid import
  
 ```java -jar icarus.jar ./my.properties inverter meter today grid import```
