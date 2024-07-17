@@ -4,17 +4,20 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -31,6 +34,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+import internal.InternalData;
+import internal.InternalDataPoint;
+import internal.InternalGridData;
+import internal.InternalGridDataPoint;
 import v1.V1BatteryData;
 import v1.V1ChargeDischarge;
 import v1.V1CommunicationDevice;
@@ -65,6 +72,8 @@ public class Icarus {
 
 	private static final String baseUrl = "https://api.givenergy.cloud/v1";
 
+	private static final String baseInternalUrl = "https://givenergy.cloud/internal-api";
+
 	private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36";
 	private static final String contentType = "application/json";
 	private static final String accept = "application/json";
@@ -78,6 +87,7 @@ public class Icarus {
 
 	private static final DateTimeFormatter defaultDateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 	private static final DateTimeFormatter formatter24HourClock = DateTimeFormatter.ofPattern("HH:mm");
+	private static final DateTimeFormatter formatterYYYYMMDD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	private static Integer pageSize = Integer.parseInt(DEFAULT_PAGE_SIZE);
 
@@ -86,6 +96,8 @@ public class Icarus {
 	private static ObjectMapper mapper;
 
 	private static String propertyFileName = DEFAULT_PROPERTY_FILENAME;
+
+	private static int exitStatus = 0;
 
 	private static boolean loadProperties(File externalPropertyFile) throws Exception {
 
@@ -222,7 +234,7 @@ public class Icarus {
 						inverter(args);
 					}
 
-					System.exit(0);
+					System.exit(exitStatus);
 				}
 
 				if (properties.containsKey(alias)) {
@@ -441,59 +453,133 @@ public class Icarus {
 
 			} else if ("system".equalsIgnoreCase(args[2])) {
 
-				V1SystemData dataSystemData = getV1InverterSystem().getData();
+				if ("internal".equalsIgnoreCase(args[3])) {
 
-				if (args.length > 3) {
+					InternalData internalDataDaily = null;
 
-					if ("battery".equalsIgnoreCase(args[3])) {
+					LocalDateTime ldtToday = LocalDateTime.now();
 
-						V1BatteryData batteryData = dataSystemData.getBattery();
+					if (args.length == 4) {
+
+						String dateToday = ldtToday.format(formatterYYYYMMDD);
+
+						internalDataDaily = getInternalInverterDailyData(dateToday);
+
+						renderInverterValue(internalDataDaily);
+
+					} else {
 
 						if (args.length > 4) {
 
-							if ("percent".equalsIgnoreCase(args[4])) {
+							LocalDateTime ldtSpecified = LocalDate.parse(args[4], formatterYYYYMMDD).atStartOfDay();
 
-								System.out.println(batteryData.getPercent());
+							if (ldtSpecified.getDayOfYear() > ldtToday.getDayOfYear()) {
 
-							} else if ("power".equalsIgnoreCase(args[4])) {
+								System.err.println("ERROR: Cannot use future date " + args[4]);
 
-								System.out.println(batteryData.getPower());
+								exitStatus = 1;
 
-							} else if ("temperature".equalsIgnoreCase(args[4])) {
+							} else {
 
-								System.out.println(batteryData.getTemperature());
+								internalDataDaily = getInternalInverterDailyData(args[4]);
+
+								if (args.length > 5) {
+
+									if ("grid".equalsIgnoreCase(args[5])) {
+
+										InternalGridData internalGridData = filterGridOnly(internalDataDaily);
+
+										if (args.length > 6 && "csv".equalsIgnoreCase(args[6])) {
+
+											// render as csv
+
+											boolean streamToFile = args.length > 7 && "file".equalsIgnoreCase(args[7]);
+
+											renderGridDataAsCSV(internalGridData, streamToFile);
+
+										} else { // render as json
+
+											renderInverterValue(internalGridData);
+										}
+
+									} else {
+
+										renderInverterValue(internalDataDaily);
+									}
+								}
+
+								else {
+
+									renderInverterValue(internalDataDaily);
+								}
 							}
 
 						} else {
 
-							renderInverterValue(batteryData);
+							renderInverterValue(internalDataDaily);
 						}
+					}
 
-					} else if ("inverter".equalsIgnoreCase(args[3])) {
+				} else {
 
-						V1Inverter inverter = dataSystemData.getInverter();
+					V1SystemData dataSystemData = getV1InverterSystem().getData();
 
-						if (args.length > 4) {
+					if (args.length > 3) {
 
-							if ("power".equalsIgnoreCase(args[4])) {
+						if ("battery".equalsIgnoreCase(args[3])) {
 
-								System.out.println(inverter.getPower());
+							V1BatteryData batteryData = dataSystemData.getBattery();
 
-							} else if ("temperature".equalsIgnoreCase(args[4])) {
+							if (args.length > 4) {
 
-								System.out.println(inverter.getTemperature());
+								if ("percent".equalsIgnoreCase(args[4])) {
 
-							} else if ("eps_power".equalsIgnoreCase(args[4])) {
+									System.out.println(batteryData.getPercent());
 
-								System.out.println(inverter.getEpsPower());
+								} else if ("power".equalsIgnoreCase(args[4])) {
 
-							} else if ("output_voltage".equalsIgnoreCase(args[4])) {
+									System.out.println(batteryData.getPower());
 
-								System.out.println(inverter.getOutputVoltage());
+								} else if ("temperature".equalsIgnoreCase(args[4])) {
 
-							} else if ("output_frequency".equalsIgnoreCase(args[4])) {
+									System.out.println(batteryData.getTemperature());
+								}
 
-								System.out.println(inverter.getOutputFrequency());
+							} else {
+
+								renderInverterValue(batteryData);
+							}
+
+						} else if ("inverter".equalsIgnoreCase(args[3])) {
+
+							V1Inverter inverter = dataSystemData.getInverter();
+
+							if (args.length > 4) {
+
+								if ("power".equalsIgnoreCase(args[4])) {
+
+									System.out.println(inverter.getPower());
+
+								} else if ("temperature".equalsIgnoreCase(args[4])) {
+
+									System.out.println(inverter.getTemperature());
+
+								} else if ("eps_power".equalsIgnoreCase(args[4])) {
+
+									System.out.println(inverter.getEpsPower());
+
+								} else if ("output_voltage".equalsIgnoreCase(args[4])) {
+
+									System.out.println(inverter.getOutputVoltage());
+
+								} else if ("output_frequency".equalsIgnoreCase(args[4])) {
+
+									System.out.println(inverter.getOutputFrequency());
+
+								} else {
+
+									renderInverterValue(inverter);
+								}
 
 							} else {
 
@@ -502,12 +588,8 @@ public class Icarus {
 
 						} else {
 
-							renderInverterValue(inverter);
+							renderInverterValue(dataSystemData);
 						}
-
-					} else {
-
-						renderInverterValue(dataSystemData);
 					}
 				}
 
@@ -1102,6 +1184,114 @@ public class Icarus {
 				}
 			}
 		}
+	}
+
+	private static void renderGridDataAsCSV(InternalGridData internalGridData, boolean streamToFile) {
+
+		PrintStream ps = System.out;
+
+		File file = null;
+
+		List<InternalGridDataPoint> data = internalGridData.getData();
+
+		if (streamToFile) {
+
+			InternalGridDataPoint recent = data.get(0);
+
+			String recentDate = recent.getTime().substring(0, 10);
+
+			file = new File(recentDate + ".csv");
+
+			try {
+
+				ps = new PrintStream(file);
+
+			} catch (FileNotFoundException e) {
+
+				e.printStackTrace();
+			}
+		}
+
+		ps.println("Time, Timestamp, Id, Voltage, Frequency, Power");
+
+		for (InternalGridDataPoint dataPoint : data) {
+
+			StringBuffer sbLine = new StringBuffer();
+
+			sbLine.append(dataPoint.getTime());
+
+			sbLine.append(',');
+
+			sbLine.append(dataPoint.getTimestamp());
+
+			sbLine.append(',');
+
+			sbLine.append(dataPoint.getId());
+
+			sbLine.append(',');
+
+			sbLine.append(dataPoint.getGridVoltage());
+
+			sbLine.append(',');
+
+			sbLine.append(dataPoint.getGridFrequency());
+
+			sbLine.append(',');
+
+			sbLine.append(dataPoint.getGridPower());
+
+			ps.println(sbLine.toString());
+		}
+
+		if (streamToFile) {
+
+			ps.flush();
+
+			ps.close();
+		}
+
+	}
+
+	private static InternalGridData filterGridOnly(InternalData internalDataDaily) {
+
+		InternalGridData result = new InternalGridData();
+
+		List<InternalDataPoint> internalDataPoints = internalDataDaily.getData();
+
+		List<InternalGridDataPoint> gridDataPoints = new ArrayList<InternalGridDataPoint>(internalDataPoints.size());
+
+		for (InternalDataPoint dataPoint : internalDataPoints) {
+
+			InternalGridDataPoint gridDataPoint = new InternalGridDataPoint();
+
+			gridDataPoint.setGridCurrent(dataPoint.getGridCurrent());
+
+			gridDataPoint.setGridExport(dataPoint.getGridExport());
+
+			gridDataPoint.setGridExportEnergyToday(dataPoint.getGridExportEnergyToday());
+
+			gridDataPoint.setGridFrequency(dataPoint.getGridFrequency());
+
+			gridDataPoint.setGridImport(dataPoint.getGridImport());
+
+			gridDataPoint.setGridImportEnergyToday(dataPoint.getGridImportEnergyToday());
+
+			gridDataPoint.setGridPower(dataPoint.getGridPower());
+
+			gridDataPoint.setGridVoltage(dataPoint.getGridVoltage());
+
+			gridDataPoint.setId(dataPoint.getId());
+
+			gridDataPoint.setTimestamp(dataPoint.getTimestamp());
+
+			gridDataPoint.setTime(dataPoint.getTime());
+
+			gridDataPoints.add(gridDataPoint);
+		}
+
+		result.setData(gridDataPoints);
+
+		return result;
 	}
 
 	private static V1CommunicationDeviceData getV1CommunicationDevices(String optionalSerialNumber)
@@ -1713,6 +1903,29 @@ public class Icarus {
 		} else {
 
 			result = mapper.readValue(json, V1DataDescriptor.class);
+		}
+
+		return result;
+
+	}
+
+	private static InternalData getInternalInverterDailyData(String dateYYYYMMDD)
+			throws MalformedURLException, IOException {
+
+		String json = getRequest(new URL(baseInternalUrl + "/inverter/data/" + properties.getProperty("serial") + "/"
+				+ dateYYYYMMDD + "?daily=true"), "inverter");
+
+		InternalData result = null;
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+
+			result = new InternalData(); // empty object
+
+		} else {
+
+			result = mapper.readValue(json, InternalData.class);
 		}
 
 		return result;
