@@ -239,4 +239,292 @@ public class InternalDataPoint {
 		this.time = time;
 	}
 
+	public Integer getGeneration() {
+		return generation;
+	}
+
+	public void setGeneration(Integer generation) {
+		this.generation = generation;
+	}
+
+	public Integer getStringGeneration1() {
+		return stringGeneration1;
+	}
+
+	public void setStringGeneration1(Integer stringGeneration1) {
+		this.stringGeneration1 = stringGeneration1;
+	}
+
+	public Integer getStringGeneration2() {
+		return stringGeneration2;
+	}
+
+	public void setStringGeneration2(Integer stringGeneration2) {
+		this.stringGeneration2 = stringGeneration2;
+	}
+
+	public Integer getStringCurrent1() {
+		return stringCurrent1;
+	}
+
+	public void setStringCurrent1(Integer stringCurrent1) {
+		this.stringCurrent1 = stringCurrent1;
+	}
+
+	public Integer getStringCurrent2() {
+		return stringCurrent2;
+	}
+
+	public void setStringCurrent2(Integer stringCurrent2) {
+		this.stringCurrent2 = stringCurrent2;
+	}
+
+	public Float getStringVoltage1() {
+		return stringVoltage1;
+	}
+
+	public void setStringVoltage1(Float stringVoltage1) {
+		this.stringVoltage1 = stringVoltage1;
+	}
+
+	public Float getStringVoltage2() {
+		return stringVoltage2;
+	}
+
+	public void setStringVoltage2(Float stringVoltage2) {
+		this.stringVoltage2 = stringVoltage2;
+	}
+
+	public Integer getBatteryPower() {
+		return batteryPower;
+	}
+
+	public void setBatteryPower(Integer batteryPower) {
+		this.batteryPower = batteryPower;
+	}
+
+	public Integer getBatteryCharge() {
+		return batteryCharge;
+	}
+
+	public void setBatteryCharge(Integer batteryCharge) {
+		this.batteryCharge = batteryCharge;
+	}
+
+	public Integer getBatteryDischarge() {
+		return batteryDischarge;
+	}
+
+	public void setBatteryDischarge(Integer batteryDischarge) {
+		this.batteryDischarge = batteryDischarge;
+	}
+
+	public Integer getDemandedPower() {
+		return demandedPower;
+	}
+
+	public void setDemandedPower(Integer demandedPower) {
+		this.demandedPower = demandedPower;
+	}
+
+	public Integer getInverterPower() {
+		return inverterPower;
+	}
+
+	public void setInverterPower(Integer inverterPower) {
+		this.inverterPower = inverterPower;
+	}
+
+	public Float getBatteryVoltage() {
+		return batteryVoltage;
+	}
+
+	public void setBatteryVoltage(Float batteryVoltage) {
+		this.batteryVoltage = batteryVoltage;
+	}
+
+	public Integer getBatteryPercentage() {
+		return batteryPercentage;
+	}
+
+	public void setBatteryPercentage(Integer batteryPercentage) {
+		this.batteryPercentage = batteryPercentage;
+	}
+
+	public Float getBatteryTemperature() {
+		return batteryTemperature;
+	}
+
+	public void setBatteryTemperature(Float batteryTemperature) {
+		this.batteryTemperature = batteryTemperature;
+	}
+
+	public Integer getEpsOutputPower() {
+		return epsOutputPower;
+	}
+
+	public void setEpsOutputPower(Integer epsOutputPower) {
+		this.epsOutputPower = epsOutputPower;
+	}
+
+	public Float getPowerFactor() {
+		return powerFactor;
+	}
+
+	public void setPowerFactor(Float powerFactor) {
+		this.powerFactor = powerFactor;
+	}
+
+	public Float getInverterVoltage() {
+		return inverterVoltage;
+	}
+
+	public void setInverterVoltage(Float inverterVoltage) {
+		this.inverterVoltage = inverterVoltage;
+	}
+
+	public Float getInverterFrequency() {
+		return inverterFrequency;
+	}
+
+	public void setInverterFrequency(Float inverterFrequency) {
+		this.inverterFrequency = inverterFrequency;
+	}
+
+	public Float getInverterTemperature() {
+		return inverterTemperature;
+	}
+
+	public void setInverterTemperature(Float inverterTemperature) {
+		this.inverterTemperature = inverterTemperature;
+	}
+
+	public Float getSolarGenerationEnergyToday() {
+		return solarGenerationEnergyToday;
+	}
+
+	public void setSolarGenerationEnergyToday(Float solarGenerationEnergyToday) {
+		this.solarGenerationEnergyToday = solarGenerationEnergyToday;
+	}
+
+	public Float getSolarGenerationEnergyTotal() {
+		return solarGenerationEnergyTotal;
+	}
+
+	public void setSolarGenerationEnergyTotal(Float solarGenerationEnergyTotal) {
+		this.solarGenerationEnergyTotal = solarGenerationEnergyTotal;
+	}
+
+	public Float getBatteryThroughputEnergyToday() {
+		return batteryThroughputEnergyToday;
+	}
+
+	public void setBatteryThroughputEnergyToday(Float batteryThroughputEnergyToday) {
+		this.batteryThroughputEnergyToday = batteryThroughputEnergyToday;
+	}
+
+	public Float getBatteryThroughputEnergyTotal() {
+		return batteryThroughputEnergyTotal;
+	}
+
+	public void setBatteryThroughputEnergyTotal(Float batteryThroughputEnergyTotal) {
+		this.batteryThroughputEnergyTotal = batteryThroughputEnergyTotal;
+	}
+
+	public Float getBatteryChargeEnergyToday() {
+		return batteryChargeEnergyToday;
+	}
+
+	public void setBatteryChargeEnergyToday(Float batteryChargeEnergyToday) {
+		this.batteryChargeEnergyToday = batteryChargeEnergyToday;
+	}
+
+	public Float getBatteryChargeEnergyTotal() {
+		return batteryChargeEnergyTotal;
+	}
+
+	public void setBatteryChargeEnergyTotal(Float batteryChargeEnergyTotal) {
+		this.batteryChargeEnergyTotal = batteryChargeEnergyTotal;
+	}
+
+	public Float getBatteryDischargeEnergyTotal() {
+		return batteryDischargeEnergyTotal;
+	}
+
+	public void setBatteryDischargeEnergyTotal(Float batteryDischargeEnergyTotal) {
+		this.batteryDischargeEnergyTotal = batteryDischargeEnergyTotal;
+	}
+
+	public Float getGridExportEnergyTotal() {
+		return gridExportEnergyTotal;
+	}
+
+	public void setGridExportEnergyTotal(Float gridExportEnergyTotal) {
+		this.gridExportEnergyTotal = gridExportEnergyTotal;
+	}
+
+	public Float getAcChargeEnergyToday() {
+		return acChargeEnergyToday;
+	}
+
+	public void setAcChargeEnergyToday(Float acChargeEnergyToday) {
+		this.acChargeEnergyToday = acChargeEnergyToday;
+	}
+
+	public Float getAcChargeEnergyTotal() {
+		return acChargeEnergyTotal;
+	}
+
+	public void setAcChargeEnergyTotal(Float acChargeEnergyTotal) {
+		this.acChargeEnergyTotal = acChargeEnergyTotal;
+	}
+
+	public Float getInverterEnergyToday() {
+		return inverterEnergyToday;
+	}
+
+	public void setInverterEnergyToday(Float inverterEnergyToday) {
+		this.inverterEnergyToday = inverterEnergyToday;
+	}
+
+	public Float getInverterEnergyTotal() {
+		return inverterEnergyTotal;
+	}
+
+	public void setInverterEnergyTotal(Float inverterEnergyTotal) {
+		this.inverterEnergyTotal = inverterEnergyTotal;
+	}
+
+	public Float getConsumptionEnergyToday() {
+		return consumptionEnergyToday;
+	}
+
+	public void setConsumptionEnergyToday(Float consumptionEnergyToday) {
+		this.consumptionEnergyToday = consumptionEnergyToday;
+	}
+
+	public Float getConsumptionEnergyTotal() {
+		return consumptionEnergyTotal;
+	}
+
+	public void setConsumptionEnergyTotal(Float consumptionEnergyTotal) {
+		this.consumptionEnergyTotal = consumptionEnergyTotal;
+	}
+
+	public String getFtime() {
+		return ftime;
+	}
+
+	public void setFtime(String ftime) {
+		this.ftime = ftime;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
 }
