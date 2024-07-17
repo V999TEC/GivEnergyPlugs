@@ -45,6 +45,10 @@ inverter=insert_api_token_here
 ```
 You can generate a GivEnergy API token for your api:smart-device and/or api:inverter here https://givenergy.cloud/account-settings/security
 
+When you execute the icarus.jar - see examples  below - it will always display a warning about the expiry of the API token  
+
+```INFO: Property key 'inverter' containing JWT token for ["api:inverter"] will expire Thu Sep 05 15:15:28 BST 2024```
+
 
 Check you API token is good by enumerating all the smart devices as follows
 ```java -jar icarus.jar My.properties```
