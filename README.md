@@ -173,4 +173,60 @@ Get the grid related data in json format for the specified date and display to s
  
 ```java -jar icarus.jar ./my.properties inverter system internal 2024-07-01 grid```
 
+### Example 12   
+Get all data in json format for the specified date and display to stdout  
+n.b. This can generate a lot of output, use with care and don't use repeatedly without pausing between api calls
 
+```
+  }, {
+    "grid_power" : 3,
+    "grid_import" : 0,
+    "grid_export" : 3,
+    "generation" : 423,
+    "string_generation_1" : 423,
+    "string_generation_2" : 0,
+    "string_current_1" : 1,
+    "string_current_2" : 0,
+    "string_voltage_1" : 241.5,
+    "string_voltage_2" : 0.0,
+    "battery_power" : 14,
+    "battery_charge" : 0,
+    "battery_discharge" : 14,
+    "demanded_power" : 364,
+    "inverter_power" : -34,
+    "grid_voltage" : 241.5,
+    "battery_voltage" : 314.22,
+    "battery_percentage" : 64,
+    "battery_temperature" : 25.3,
+    "eps_output_power" : 362,
+    "power_factor" : 0.1,
+    "grid_current" : 0.4,
+    "grid_frequency" : 50.04,
+    "inverter_voltage" : 241.5,
+    "inverter_frequency" : 50.04,
+    "inverter_temperature" : 39.8,
+    "solar_generation_energy_today" : 0.4,
+    "solar_generation_energy_total" : 2696.6,
+    "battery_throughput_energy_today" : null,
+    "battery_throughput_energy_total" : 4236.5,
+    "battery_charge_energy_today" : 0.9,
+    "battery_charge_energy_total" : 2118.25,
+    "battery_discharge_energy_today" : 3.6,
+    "battery_discharge_energy_total" : 2118.25,
+    "grid_import_energy_today" : 1.2,
+    "grid_import_energy_total" : 1751.6,
+    "grid_export_energy_today" : 0.1,
+    "grid_export_energy_total" : 792.8,
+    "ac_charge_energy_today" : 0.9,
+    "ac_charge_energy_total" : 2280.7,
+    "inverter_energy_today" : 3.4,
+    "inverter_energy_total" : 1916.7,
+    "consumption_energy_today" : 4.0,
+    "consumption_energy_total" : 3291.4,
+    "id" : 6339041,
+    "time" : "2024-07-01 07:58:28",
+    "ftime" : "2024-07-01 07:58:28",
+    "timestamp" : 1719820708,
+    "status" : "NORMAL"
+  }, {
+```
