@@ -38,6 +38,8 @@ import internal.InternalData;
 import internal.InternalDataPoint;
 import internal.InternalGridData;
 import internal.InternalGridDataPoint;
+import internal.InternalLogData;
+import internal.InternalLogDataEvent;
 import v1.V1BatteryData;
 import v1.V1ChargeDischarge;
 import v1.V1CommunicationDevice;
@@ -73,6 +75,9 @@ public class Icarus {
 	private static final String baseUrl = "https://api.givenergy.cloud/v1";
 
 	private static final String baseInternalUrl = "https://givenergy.cloud/internal-api";
+
+	// example POST
+	// https://givenergy.cloud/internal-api/paginate/inverter-register-record?page=1&itemsPerPage=15
 
 	private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36";
 	private static final String contentType = "application/json";
@@ -471,46 +476,62 @@ public class Icarus {
 
 						if (args.length > 4) {
 
-							LocalDateTime ldtSpecified = LocalDate.parse(args[4], formatterYYYYMMDD).atStartOfDay();
+							if ("presets".equalsIgnoreCase(args[4])) {
 
-							if (ldtSpecified.getDayOfYear() > ldtToday.getDayOfYear()) {
+								Object json = getInternalInverterPresets();
 
-								System.err.println("ERROR: Cannot use future date " + args[4]);
+								renderInverterValue(json);
 
-								exitStatus = 1;
+							} else if ("log".equalsIgnoreCase(args[4])) {
+
+								InternalLogData data = getInternalInverterLog(1, 3, 10);
+
+								renderInverterValue(data);
 
 							} else {
 
-								internalDataDaily = getInternalInverterDailyData(args[4]);
+								LocalDateTime ldtSpecified = LocalDate.parse(args[4], formatterYYYYMMDD).atStartOfDay();
 
-								if (args.length > 5) {
+								if (ldtSpecified.getDayOfYear() > ldtToday.getDayOfYear()) {
 
-									if ("grid".equalsIgnoreCase(args[5])) {
+									System.err.println("ERROR: Cannot use future date " + args[4]);
 
-										InternalGridData internalGridData = filterGridOnly(internalDataDaily);
+									exitStatus = 1;
 
-										if (args.length > 6 && "csv".equalsIgnoreCase(args[6])) {
+								} else {
 
-											// render as csv
+									internalDataDaily = getInternalInverterDailyData(args[4]);
 
-											boolean streamToFile = args.length > 7 && "file".equalsIgnoreCase(args[7]);
+									if (args.length > 5) {
 
-											renderGridDataAsCSV(internalGridData, streamToFile);
+										if ("grid".equalsIgnoreCase(args[5])) {
 
-										} else { // render as json
+											InternalGridData internalGridData = filterGridOnly(internalDataDaily);
 
-											renderInverterValue(internalGridData);
+											if (args.length > 6 && "csv".equalsIgnoreCase(args[6])) {
+
+												// render as csv
+
+												boolean streamToFile = args.length > 7
+														&& "file".equalsIgnoreCase(args[7]);
+
+												renderGridDataAsCSV(internalGridData, streamToFile);
+
+											} else { // render as json
+
+												renderInverterValue(internalGridData);
+											}
+
+										} else {
+
+											renderInverterValue(internalDataDaily);
 										}
+									}
 
-									} else {
+									else {
 
 										renderInverterValue(internalDataDaily);
 									}
-								}
-
-								else {
-
-									renderInverterValue(internalDataDaily);
 								}
 							}
 
@@ -1932,6 +1953,72 @@ public class Icarus {
 
 	}
 
+	private static Object getInternalInverterPresets() throws MalformedURLException, IOException {
+
+		String json = getRequest(
+				new URL(baseInternalUrl + "/inverter/" + properties.getProperty("serial") + "/presets"), "inverter");
+
+		return json;
+	}
+
+	private static InternalLogData getInternalInverterLog(int fromPage, int toPage, int itemsPerPage)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		InternalLogData result = new InternalLogData();
+
+		String bodyValue = "{\"search\":\"\",\"filter_errors\":true,\"filter_same_value_responses\":true,\"server_user\":0,\"read_write\":0,\"inverter_serial\":\""
+				+ properties.getProperty("serial") + "\"}";
+
+		List<InternalLogDataEvent> logDataEvents = new ArrayList<InternalLogDataEvent>();
+
+		for (int p = fromPage; p < toPage; p++) {
+
+			if (0 != logDataEvents.size()) {
+
+				// be sympathetic to server upon repeated calls
+
+				try {
+
+					Thread.sleep(5000L);
+
+				} catch (InterruptedException e) {
+
+					System.err.println("Error: interruption before obtaining all data: " + e.getMessage());
+					e.printStackTrace();
+
+					break;
+				}
+			}
+
+			String json = postRequest(new URL(baseInternalUrl + "/paginate/inverter-register-record?page="
+					+ String.valueOf(p) + "&itemsPerPage=" + String.valueOf(itemsPerPage)), "inverter", bodyValue);
+
+			InternalLogData pageOfEvents = null;
+
+			if (null == json || 0 == json.trim().length()) {
+
+				System.err.println("Error obtaining data. Check the token in property file!");
+
+				break;
+			}
+
+			pageOfEvents = mapper.readValue(json, InternalLogData.class);
+
+			int numOnPage = pageOfEvents.getData().size();
+
+			for (int e = 0; e < numOnPage; e++) {
+
+				InternalLogDataEvent event = pageOfEvents.getData().get(e);
+
+				logDataEvents.add(event);
+			}
+		}
+
+		result.setData(logDataEvents);
+
+		return result;
+	}
+
 	private static V1DataSystem getV1InverterSystem() throws MalformedURLException, IOException {
 
 		String json = getRequest(
@@ -1977,24 +2064,6 @@ public class Icarus {
 	}
 
 	private static String getRequest(URL url, String tokenKey) throws IOException {
-
-//		File file = new File("./test.tmp");
-//
-//		BufferedReader reader = new BufferedReader(new FileReader(file));
-//		String line = null;
-//		StringBuilder stringBuilder = new StringBuilder();
-//		String ls = System.getProperty("line.separator");
-//
-//		try {
-//			while ((line = reader.readLine()) != null) {
-//				stringBuilder.append(line);
-//				stringBuilder.append(ls);
-//			}
-//
-//			return stringBuilder.toString();
-//		} finally {
-//			reader.close();
-//		}
 
 		return getRequest(url, true, tokenKey);
 	}
