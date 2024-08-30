@@ -230,6 +230,10 @@ public class Icarus {
 
 					if (0 == "notification".compareTo(alias)) {
 
+//						String who = "SwindonIcarus";
+//						String result = postInternalDashboardData(who);
+//						System.out.println(result);
+
 						OffsetDateTime odt = OffsetDateTime.ofInstant(Instant.now(), ourZoneId);
 
 						postV1Notification("The OffsetDateTime is " + odt.format(defaultDateTimeFormatter));
@@ -992,6 +996,256 @@ public class Icarus {
 						if (soc > -1) {
 
 							postV1InverterSettingWrite(128, soc); // AC Charge 10 Upper
+																	// SOC %
+																	// Limit
+						}
+					} else if ("K".equalsIgnoreCase(args[3])) {
+
+						// macro K HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(53, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 1
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(54, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 10
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(129, soc); // DC Discharge 1 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("L".equalsIgnoreCase(args[3])) {
+
+						// macro L HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(41, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 2
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(42, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 2
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(130, soc); // DC Discharge 2 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("M".equalsIgnoreCase(args[3])) {
+
+						// macro M HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(131, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 3
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(132, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 3
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(133, soc); // DC Discharge 3 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("N".equalsIgnoreCase(args[3])) {
+
+						// macro N HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(134, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 4
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(135, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 4
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(136, soc); // DC Discharge 4 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("O".equalsIgnoreCase(args[3])) {
+
+						// macro O HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(137, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 5
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(138, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 5
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(139, soc); // DC Discharge 5 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("P".equalsIgnoreCase(args[3])) {
+
+						// macro P HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(140, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 6
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(141, args.length < 6 ? "00:00" : args[5]); // AC
+						// DC Discharge
+						// 6
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(142, soc); // DC Discharge 6 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("Q".equalsIgnoreCase(args[3])) {
+
+						// macro Q HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(143, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 7
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(144, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 7
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(145, soc); // DC Discharge 7 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("R".equalsIgnoreCase(args[3])) {
+
+						// macro R HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(146, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 8
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(148, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 8
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(148, soc); // DC Discharge 8 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("S".equalsIgnoreCase(args[3])) {
+
+						// macro S HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(149, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 9
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(150, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 9
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(151, soc); // DC Discharge 9 Lower
+																	// SOC %
+																	// Limit
+						}
+					} else if ("T".equalsIgnoreCase(args[3])) {
+
+						// macro T HH:mm HH:mm 0-100
+						// set start time, end time and SoC of timed battery charge
+
+						postV1InverterSettingWriteString(152, args.length < 5 ? "00:00" : args[4]);
+						// DC Discharge
+						// 10
+						// Start
+						// Time or
+						// midnight
+
+						postV1InverterSettingWriteString(153, args.length < 6 ? "00:00" : args[5]);
+						// DC Discharge
+						// 10
+						// End
+						// Time or
+						// midnight
+
+						if (soc > -1) {
+
+							postV1InverterSettingWrite(154, soc); // DC Discharge 10 Lower
 																	// SOC %
 																	// Limit
 						}
@@ -1792,6 +2046,18 @@ public class Icarus {
 
 	}
 
+	// https://givenergy.cloud/internal-api/dashboard/header/SwindonIcarus/data
+
+	private static String postInternalDashboardData(String who)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		String referer = "https://givenergy.cloud/dashboard";
+
+		String json = postRequest(new URL(baseInternalUrl + "/dashboard/header/" + who + "/data"), referer);
+
+		return json;
+	}
+
 	private static V1DataStringValue postV1InverterSettingWriteString(int id, String value)
 			throws MalformedURLException, IOException, URISyntaxException {
 
@@ -2068,9 +2334,14 @@ public class Icarus {
 		return getRequest(url, true, tokenKey);
 	}
 
+	private static String postRequest(URL url, String referer) throws IOException, URISyntaxException {
+
+		return postRequest(url, true, "Account", null, referer);
+	}
+
 	private static String postRequest(URL url, String tokenKey, String body) throws IOException, URISyntaxException {
 
-		return postRequest(url, true, tokenKey, body);
+		return postRequest(url, true, tokenKey, body, null);
 	}
 
 	/*
@@ -2213,8 +2484,8 @@ public class Icarus {
 		return json;
 	}
 
-	private static String postRequest(URL url, boolean authorisationRequired, String tokenKey, String body)
-			throws IOException {
+	private static String postRequest(URL url, boolean authorisationRequired, String tokenKey, String body,
+			String referer) throws IOException {
 
 		int status = 0;
 
@@ -2230,15 +2501,24 @@ public class Icarus {
 			con.setRequestProperty("Authorization", "Bearer " + properties.getProperty(tokenKey));
 		}
 
+		if (null != referer) {
+
+			con.setRequestProperty("Referer", referer);
+		}
+
 		con.setRequestMethod("POST");
 
 		con.setRequestProperty("Accept", accept);
 
 		con.setDoOutput(true);
-		OutputStream os = con.getOutputStream();
-		os.write(body.getBytes());
-		os.flush();
-		os.close();
+
+		if (null != body) {
+
+			OutputStream os = con.getOutputStream();
+			os.write(body.getBytes());
+			os.flush();
+			os.close();
+		}
 
 		try {
 			con.connect();
