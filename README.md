@@ -175,6 +175,10 @@ Get the grid related data in json format for the specified date and display to s
 
 ### Example 12   
 Get all data in json format for the specified date and display to stdout  
+
+```
+java -jar icarus.jar ../my.properties inverter system internal 2024-09-04
+```
 n.b. This can generate a lot of output, use with care and don't use repeatedly without pausing between api calls
 
 ```
