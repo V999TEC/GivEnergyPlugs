@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -49,14 +50,18 @@ import v1.V1DataBooleanValue;
 import v1.V1DataDescriptor;
 import v1.V1DataIntegerValue;
 import v1.V1DataMeter;
+import v1.V1DataPoint;
+import v1.V1DataPoints;
 import v1.V1DataSettings;
 import v1.V1DataStringValue;
 import v1.V1DataSystem;
+import v1.V1GridData;
 import v1.V1ImportExport;
 import v1.V1Inverter;
 import v1.V1Links;
 import v1.V1Meters;
 import v1.V1Notification;
+import v1.V1Power;
 import v1.V1SmartDevice;
 import v1.V1SmartDeviceData;
 import v1.V1SmartDevices;
@@ -93,6 +98,7 @@ public class Icarus {
 	private static final DateTimeFormatter defaultDateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 	private static final DateTimeFormatter formatter24HourClock = DateTimeFormatter.ofPattern("HH:mm");
 	private static final DateTimeFormatter formatterYYYYMMDD = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+	private static final DateTimeFormatter formatterGrid = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 	private static Integer pageSize = Integer.parseInt(DEFAULT_PAGE_SIZE);
 
@@ -171,7 +177,8 @@ public class Icarus {
 
 					if (args.length > 2) {
 
-						if (null != alias && 0 != "inverter".compareTo(alias) && 0 != "notfication".compareTo(alias)) {
+						if (null != alias && 0 != "login".compareToIgnoreCase(alias) && 0 != "inverter".compareTo(alias)
+								&& 0 != "notfication".compareTo(alias)) {
 
 							// the optional 3rd parameter should be a 'from' date which represents the
 							// oldest timestamp we want to filter on
@@ -224,6 +231,12 @@ public class Icarus {
 					System.out.println(key + "=" + smartDevice.getUuid());
 				}
 
+			} else if (0 == "login".compareToIgnoreCase(alias)) {
+
+				// assume username in [2] and password in [3] optionally remember in [4]
+
+				postV1Login(args[2], args[3], args.length > 4 && 0 == "true".compareToIgnoreCase(args[4]));
+
 			} else {
 
 				if (0 == "notification".compareTo(alias) || 0 == "inverter".compareTo(alias)) {
@@ -261,6 +274,49 @@ public class Icarus {
 			e.printStackTrace();
 		}
 
+	}
+
+	private static void postV1Login(String username, String password, boolean remember) {
+
+		String bodyValue = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\",\"remember\":"
+				+ (remember ? "true" : "false") + "}";
+
+		String json = null;
+
+		try {
+			json = postRequest(new URL("https://givenergy.cloud/login"), "null", bodyValue);
+
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (URISyntaxException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		if (null == json || 0 == json.trim().length()) {
+
+			System.err.println("Error obtaining data. Check the token in property file!");
+		}
+//				result = new V1DataIntegerValue(); // empty object
+//
+//			} else {
+//
+//				result = mapper.readValue(json, V1DataIntegerValue.class);
+//			}
+//
+//			if (result.getData().getSuccess()) {
+//
+//				break;
+//			}
+
+//			System.err.println(count + "\t" + result.getData().getSuccess() + "\t" + result.getData().getMessage()
+//					+ "\t" + result.getData().getValue());
+
+		System.out.println(bodyValue);
 	}
 
 	private static void smartDevice(String alias, OffsetDateTime from, OffsetDateTime to, ZoneId ourZoneId)
@@ -504,7 +560,14 @@ public class Icarus {
 
 								} else {
 
-									internalDataDaily = getInternalInverterDailyData(args[4]);
+									if (args[args.length - 1].endsWith(".json")) {
+
+										internalDataDaily = getImportedJsonDailyData(args[args.length - 1]);
+
+									} else {
+
+										internalDataDaily = getInternalInverterDailyData(args[4]);
+									}
 
 									if (args.length > 5) {
 
@@ -615,6 +678,36 @@ public class Icarus {
 
 							renderInverterValue(dataSystemData);
 						}
+					}
+				}
+
+			} else if ("events".equalsIgnoreCase(args[2])) {
+
+				String test = getV1InverterEvents();
+
+				System.out.println(test);
+
+			} else if ("data-points".equalsIgnoreCase(args[2]) && args.length > 3) {
+
+				// ./Icarus.properties inverter data-points 2024-12-10 grid csv file
+
+				V1DataPoints dataPointsDaily = getV1InverterDataPoints(5000, args[3]); // pageSize, YYYY-MM-DD
+
+				if (args.length > 4 && "grid".equalsIgnoreCase(args[4])) {
+
+					InternalGridData internalGridData = filterGridOnly(dataPointsDaily);
+
+					if (args.length > 5 && "csv".equalsIgnoreCase(args[5])) {
+
+						// render as csv
+
+						boolean streamToFile = args.length > 6 && "file".equalsIgnoreCase(args[6]);
+
+						renderGridDataAsCSV(internalGridData, streamToFile);
+
+					} else { // render as json
+
+						renderInverterValue(internalGridData);
 					}
 				}
 
@@ -1461,6 +1554,61 @@ public class Icarus {
 		}
 	}
 
+	private static InternalData getImportedJsonDailyData(String fileName) {
+
+		InternalData result = null;
+
+		StringBuilder stringBuilder = new StringBuilder();
+
+		BufferedReader reader = null;
+
+		try {
+
+			reader = new BufferedReader(new FileReader(fileName));
+
+			String line = null;
+
+			String ls = System.getProperty("line.separator");
+
+			while ((line = reader.readLine()) != null) {
+
+				stringBuilder.append(line);
+
+				stringBuilder.append(ls);
+			}
+
+			String json = stringBuilder.toString();
+
+			if (null == json || 0 == json.trim().length()) {
+
+				System.err.println("Error obtaining data. Check the token in property file!");
+
+				result = new InternalData(); // empty object
+
+			} else {
+
+				result = mapper.readValue(json, InternalData.class);
+			}
+
+		} catch (IOException e) {
+
+			e.printStackTrace();
+
+		} finally {
+
+			try {
+				reader.close();
+
+			} catch (IOException e) {
+
+				e.printStackTrace();
+			}
+		}
+
+		return result;
+
+	}
+
 	private static void renderGridDataAsCSV(InternalGridData internalGridData, boolean streamToFile) {
 
 		PrintStream ps = System.out;
@@ -1524,6 +1672,55 @@ public class Icarus {
 
 			ps.close();
 		}
+
+	}
+
+	private static InternalGridData filterGridOnly(V1DataPoints dataPointsDaily) {
+
+		InternalGridData result = new InternalGridData();
+
+		List<V1DataPoint> dataPoints = dataPointsDaily.getDataPoints();
+
+		int size = dataPoints.size();
+
+		List<InternalGridDataPoint> gridDataPoints = new ArrayList<InternalGridDataPoint>(size);
+
+		int count = 0;
+
+		for (V1DataPoint dataPoint : dataPoints) {
+
+			InternalGridDataPoint internalGridDataPoint = new InternalGridDataPoint();
+
+			String zuluTime = dataPoint.getTime();
+
+			LocalDateTime ldtSpecified = LocalDateTime.parse(zuluTime, defaultDateTimeFormatter);
+
+			Long epochSecond = ldtSpecified.toEpochSecond(ZoneOffset.UTC);
+
+			internalGridDataPoint.setTime(ldtSpecified.format(formatterGrid));
+
+			internalGridDataPoint.setTimestamp(epochSecond.intValue());
+
+			V1Power power = dataPoint.getPower();
+
+			V1GridData gridData = power.getGridData();
+
+			internalGridDataPoint.setGridVoltage(gridData.getVoltage());
+
+			internalGridDataPoint.setGridFrequency(gridData.getFrequency());
+
+			internalGridDataPoint.setGridPower(gridData.getPower());
+
+			internalGridDataPoint.setId(count);
+
+			count++;
+
+			gridDataPoints.add(internalGridDataPoint);
+		}
+
+		result.setData(gridDataPoints);
+
+		return result;
 
 	}
 
@@ -2305,6 +2502,87 @@ public class Icarus {
 
 		return result;
 
+	}
+
+	private static String getV1InverterEvents() throws MalformedURLException, IOException {
+
+		String result;
+
+		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/events"),
+				"inverter");
+
+//		V1DataMeter result = null;
+//
+//		if (null == json || 0 == json.trim().length()) {
+//
+//			System.err.println("Error obtaining data. Check the token in property file!");
+//
+//			result = new V1DataMeter(); // empty object
+//
+//		} else {
+//
+//			result = mapper.readValue(json, V1DataMeter.class);
+//		}
+
+		result = json;
+
+		return result;
+
+	}
+
+	private static V1DataPoints getV1InverterDataPoints(int pageSize, String date)
+			throws MalformedURLException, IOException {
+
+		List<V1DataPoint> dataPoints = new ArrayList<V1DataPoint>();
+
+		V1DataPoints result = new V1DataPoints();
+
+		result.setDataPoints(dataPoints); // initially empty
+
+		int page = 0;
+
+		int lastPage = -1;
+
+		V1DataPoints someMoreDataPoints = null;
+
+		do {
+
+			page++;
+
+			String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/data-points/"
+					+ date + "T00:00:00Z?page=" + page + "&pageSize=" + String.valueOf(pageSize)), "inverter");
+
+			someMoreDataPoints = new V1DataPoints();
+
+			if (null == json || 0 == json.trim().length()) {
+
+				System.err.println("Error obtaining data. Check the token in property file!");
+
+				break;
+			}
+
+			someMoreDataPoints = mapper.readValue(json, V1DataPoints.class);
+
+			result.getDataPoints().addAll(someMoreDataPoints.getDataPoints());
+
+			if (lastPage < 0) {
+
+				lastPage = someMoreDataPoints.getMeta().getLastPage();
+
+			} else {
+
+				try {
+					Thread.sleep(2000L);
+
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		} while (page < lastPage);
+
+		return result;
 	}
 
 	private static V1DataMeter getV1InverterMeter() throws MalformedURLException, IOException {
