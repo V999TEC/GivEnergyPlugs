@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>uk.co.myzen.a_z</groupId>
   <artifactId>givenergy.smart.icarus</artifactId>
-  <version>1.0.17-SNAPSHOT</version>
+  <version>1.0.18-SNAPSHOT</version>
   <description>Experiments with GivEnergy API for Smart Plugs and Inverters</description>
   
     <properties>
