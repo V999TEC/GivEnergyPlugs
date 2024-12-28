@@ -1923,8 +1923,14 @@ public class Icarus {
 
 			LocalDateTime ldtHighest = LocalDateTime.ofInstant(instantHighest, ourZoneId);
 
-			long fromDay = ldtLowest.get(ChronoField.DAY_OF_YEAR);
-			long toDay = ldtHighest.get(ChronoField.DAY_OF_YEAR);
+			int fromDay = ldtLowest.get(ChronoField.DAY_OF_YEAR);
+			int toDay = ldtHighest.get(ChronoField.DAY_OF_YEAR);
+
+			int fromYear = ldtLowest.get(ChronoField.YEAR);
+			int toYear = ldtHighest.get(ChronoField.YEAR);
+
+			long fromEpochDayNumber = ldtLowest.getLong(ChronoField.EPOCH_DAY);
+			long toEpochDayNumber = ldtHighest.getLong(ChronoField.EPOCH_DAY);
 
 			float accWattHours = accWattSeconds / 3600;
 
@@ -1932,9 +1938,10 @@ public class Icarus {
 
 			if (null != cache) {
 
-				System.out.println((toDay - fromDay + 1) + " day(s) from: " + ldtLowest.format(formatter24HourClock)
-						+ " on day " + fromDay + " to " + ldtHighest.format(formatter24HourClock) + " on day " + toDay
-						+ " " + String.format("%8.3f", kWhr) + " kWhr consumed via " + alias + " (" + accSeconds
+				System.out.println((toEpochDayNumber - fromEpochDayNumber + 1) + " day(s) from: "
+						+ ldtLowest.format(formatter24HourClock) + " on day " + fromDay + "(" + fromYear + ") to "
+						+ ldtHighest.format(formatter24HourClock) + " on day " + toDay + "(" + toYear + ") "
+						+ String.format("%8.3f", kWhr) + " kWhr consumed via " + alias + " (" + accSeconds
 						+ " secs using power) ");
 			}
 
