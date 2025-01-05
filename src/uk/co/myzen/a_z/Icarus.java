@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
@@ -84,14 +85,21 @@ public class Icarus {
 
 	private final static String KEY_FORECAST_SOLAR = "forecast.solar";
 
+	private final static String KEY_FORECAST_MAX_AGE_SECONDS = "forecast.max.age.seconds";
+
 	private final static String KEY_SUNRISE_SUNSET_API = "sunrise.sunset.api";
 
 	private final static String KEY_SUNRISE_SUNSET_FILE = "sunrise.sunset.file";
 
 	private final static String DEFAULT_FORECAST_SOLAR_PROPERTY = "false";
 
+	private final static String DEFAULT_FORECAST_MAX_AGE_SECONDS_PROPERTY = "86400";
+
 	private static String forecastSolar = DEFAULT_FORECAST_SOLAR_PROPERTY;// overridden by forcecast.solar=value in
 																			// properties
+
+	private static String forecastMaxAgeSeconds = DEFAULT_FORECAST_MAX_AGE_SECONDS_PROPERTY; // overridden by
+																								// forecast.max.age.seconds=value
 
 	private final static String DEFAULT_SUNRISE_SUNSET_API_PROPERTY = "false";
 
@@ -253,6 +261,9 @@ public class Icarus {
 
 			forecastSolar = properties.getProperty(KEY_FORECAST_SOLAR, DEFAULT_FORECAST_SOLAR_PROPERTY).trim();
 
+			forecastMaxAgeSeconds = properties.getProperty(KEY_FORECAST_MAX_AGE_SECONDS,
+					DEFAULT_FORECAST_MAX_AGE_SECONDS_PROPERTY);
+
 			sunriseSunsetApi = properties.getProperty(KEY_SUNRISE_SUNSET_API, DEFAULT_SUNRISE_SUNSET_API_PROPERTY)
 					.trim();
 
@@ -333,9 +344,11 @@ public class Icarus {
 
 				try {
 
-					OffsetDateTime odt = OffsetDateTime.now(ourZoneId);
+					ZoneId utcZoneId = ZoneId.of("UTC");
 
-					String key = odt.format(formatterYYYYMMDD); // today
+					ZonedDateTime zdtNow = ZonedDateTime.now(utcZoneId);
+
+					String key = zdtNow.format(formatterYYYYMMDD); // today
 
 					ResultMessage rm = readCachedSolarData(key);
 
@@ -354,13 +367,23 @@ public class Icarus {
 
 					} else {
 
-						// we have a value for today but it might have been predicted yesterday
+						// we have a value for today but it might have been predicted yesterday or be
+						// out of date
 
-						// check if the cache value was forecast today and update if not
+						// check if the cache value was forecast today and update if too old
 
-						String timeCached = rm.getMessage().getInfo().getTime();
+						String timeCached = rm.getMessage().getInfo().getTimeUTC();
 
-						if (!key.equals(timeCached.substring(0, 10))) {
+						ZonedDateTime zdtCached = ZonedDateTime.parse(timeCached,
+								DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+
+						long secondsOld = zdtNow.toEpochSecond() - zdtCached.toEpochSecond();
+
+						// how long ago was the solar forecast predicted ?
+						// eg more than 8 hours or yesterday
+
+						if (secondsOld > Integer.parseInt(forecastMaxAgeSeconds)
+								|| !key.equals(timeCached.substring(0, 10))) {
 
 							// will be today's value but cached yesterday, so we can attempt to do better
 							// estimate
@@ -380,7 +403,7 @@ public class Icarus {
 
 					// delete yesterday's cache
 
-					String keyYesterday = odt.minusDays(1L).format(formatterYYYYMMDD); // yesterday
+					String keyYesterday = zdtNow.minusDays(1L).format(formatterYYYYMMDD); // yesterday
 
 					purgeCache(keyYesterday);
 
