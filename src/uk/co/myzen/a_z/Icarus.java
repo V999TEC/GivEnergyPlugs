@@ -28,6 +28,7 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -38,6 +39,11 @@ import internal.InternalData;
 import internal.InternalDataPoint;
 import internal.InternalGridData;
 import internal.InternalGridDataPoint;
+import uk.co.myzen.a_z.json.forecast.solar.ResultMessage;
+import uk.co.myzen.a_z.json.forecast.solar.SolarMessage;
+import uk.co.myzen.a_z.json.forecast.solar.SolarResult;
+import uk.co.myzen.a_z.json.sunrise.sunset.DayResult;
+import uk.co.myzen.a_z.json.sunrise.sunset.ResultsStatus;
 import v1.V1BatteryData;
 import v1.V1ChargeDischarge;
 import v1.V1CommunicationDevice;
@@ -76,10 +82,27 @@ public class Icarus {
 
 	private static final String baseUrl = "https://api.givenergy.cloud/v1";
 
-//	private static final String baseInternalUrl = "https://givenergy.cloud/internal-api";
+	private final static String KEY_FORECAST_SOLAR = "forecast.solar";
 
-	// example POST
-	// https://givenergy.cloud/internal-api/paginate/inverter-register-record?page=1&itemsPerPage=15
+	private final static String KEY_SUNRISE_SUNSET_API = "sunrise.sunset.api";
+
+	private final static String KEY_SUNRISE_SUNSET_FILE = "sunrise.sunset.file";
+
+	private final static String DEFAULT_FORECAST_SOLAR_PROPERTY = "false";
+
+	private static String forecastSolar = DEFAULT_FORECAST_SOLAR_PROPERTY;// overridden by forcecast.solar=value in
+																			// properties
+
+	private final static String DEFAULT_SUNRISE_SUNSET_API_PROPERTY = "false";
+
+	private static String sunriseSunsetApi = DEFAULT_SUNRISE_SUNSET_API_PROPERTY; // overridden by sunrise.sunset.api in
+																					// properties
+
+	private final static String DEFAULT_SUNRISE_SUNSET_FILE_PROPERTY = "false";
+
+	private static String sunriseSunsetFilename = DEFAULT_SUNRISE_SUNSET_FILE_PROPERTY; // overridden by
+																						// sunrise.sunset.file
+	// in properties
 
 	private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36";
 	private static final String contentType = "application/json";
@@ -158,6 +181,10 @@ public class Icarus {
 			OffsetDateTime from = null;
 			OffsetDateTime to = null;
 
+			boolean forecast = false;
+
+			boolean sun = false;
+
 			if (args.length > 0) {
 
 				propertyFileName = args[0].trim();
@@ -172,10 +199,18 @@ public class Icarus {
 
 					alias = args[1].trim();
 
-					if (args.length > 2) {
+					if ("sun".equals(alias)) {
 
-						if (null != alias && 0 != "login".compareToIgnoreCase(alias) && 0 != "inverter".compareTo(alias)
-								&& 0 != "notfication".compareTo(alias)) {
+					} else if (args.length > 2) {
+
+						p2 = args[2].trim();
+
+						if ("forecast".equals(alias) && "solar".equals(p2)) {
+
+							forecast = true;
+
+						} else if (null != alias && 0 != "login".compareToIgnoreCase(alias)
+								&& 0 != "inverter".compareTo(alias) && 0 != "notfication".compareTo(alias)) {
 
 							// the optional 3rd parameter should be a 'from' date which represents the
 							// oldest timestamp we want to filter on
@@ -207,13 +242,26 @@ public class Icarus {
 							}
 						}
 					}
-
 				}
 			}
 
 			File externalProperties = new File(propertyFileName);
 
+//			System.err.println("propertyFileName:" + propertyFileName);
+
 			loadProperties(externalProperties);
+
+			forecastSolar = properties.getProperty(KEY_FORECAST_SOLAR, DEFAULT_FORECAST_SOLAR_PROPERTY).trim();
+
+			sunriseSunsetApi = properties.getProperty(KEY_SUNRISE_SUNSET_API, DEFAULT_SUNRISE_SUNSET_API_PROPERTY)
+					.trim();
+
+//			System.err.println("sunriseSunsetApi:" + sunriseSunsetApi);
+
+			sunriseSunsetFilename = properties
+					.getProperty(KEY_SUNRISE_SUNSET_FILE, DEFAULT_SUNRISE_SUNSET_FILE_PROPERTY).trim();
+
+//			System.err.println("sunriseSunsetFilename:" + sunriseSunsetFilename);
 
 			ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
 
@@ -233,6 +281,121 @@ public class Icarus {
 				// assume username in [2] and password in [3] optionally remember in [4]
 
 				postV1Login(args[2], args[3], args.length > 4 && 0 == "true".compareToIgnoreCase(args[4]));
+
+			} else if (0 == "sun".compareToIgnoreCase(alias)) {
+
+				OffsetDateTime odt = OffsetDateTime.now(ourZoneId);
+
+				String keyToday = odt.format(formatterYYYYMMDD); // today
+
+				ResultsStatus rs = readCachedSunriseSunset();
+
+				String solarNoon = null;
+
+				String sunrise = "";
+
+				String sunset = "";
+
+				if (null != rs) {
+
+					List<DayResult> results = rs.getResults();
+
+					DayResult dr = getSunriseSunsetOnDay(keyToday, results);
+
+					if (null != dr) {
+
+						sunrise = dr.getSunrise();
+						solarNoon = dr.getSolarNoon();
+						sunset = dr.getSunset();
+					}
+				}
+
+				if (null == solarNoon) {
+
+					String keyTomorrow = odt.plusDays(1l).format(formatterYYYYMMDD); // tomorrow
+
+					ResultsStatus rsTodayTomorrow = getSunriseSunset(keyToday, keyTomorrow);
+
+					cacheSunriseSunset(rsTodayTomorrow);
+
+					DayResult dr = getSunriseSunsetOnDay(keyToday, rsTodayTomorrow.getResults());
+
+					sunrise = dr.getSunrise();
+					solarNoon = dr.getSolarNoon();
+					sunset = dr.getSunset();
+				}
+
+				System.out.println(sunrise + "," + solarNoon + "," + sunset);
+
+			} else if (forecast) {
+
+				// assume solar
+
+				try {
+
+					OffsetDateTime odt = OffsetDateTime.now(ourZoneId);
+
+					String key = odt.format(formatterYYYYMMDD); // today
+
+					ResultMessage rm = readCachedSolarData(key);
+
+					if (null == rm) {
+
+						// we don't seem to have a cached value for today (unusual)
+
+						rm = getForecastSolar();
+
+						if (null != rm) {
+
+							// we now have a value for today and tomorrow
+
+							cacheSolarData(rm);
+						}
+
+					} else {
+
+						// we have a value for today but it might have been predicted yesterday
+
+						// check if the cache value was forecast today and update if not
+
+						String timeCached = rm.getMessage().getInfo().getTime();
+
+						if (!key.equals(timeCached.substring(0, 10))) {
+
+							// will be today's value but cached yesterday, so we can attempt to do better
+							// estimate
+
+							ResultMessage rm2 = getForecastSolar();
+
+							if (null != rm2) {
+
+								// assume we have an updated value for today/tomorrow
+
+								cacheSolarData(rm2);
+
+								rm = rm2;
+							}
+						}
+					}
+
+					// delete yesterday's cache
+
+					String keyYesterday = odt.minusDays(1L).format(formatterYYYYMMDD); // yesterday
+
+					purgeCache(keyYesterday);
+
+					// return today's value to stdout
+
+					Integer value = rm.getResult().getValue(key);
+
+					System.out.println(value);
+
+				} catch (Exception e) {
+
+					e.printStackTrace();
+				}
+
+			} else if (sun) {
 
 			} else {
 
@@ -266,7 +429,9 @@ public class Icarus {
 				}
 			}
 
-		} catch (Exception e) {
+		} catch (
+
+		Exception e) {
 
 			e.printStackTrace();
 		}
@@ -621,7 +786,7 @@ public class Icarus {
 
 						boolean streamToFile = args.length > 6 && "file".equalsIgnoreCase(args[6]);
 
-						renderGridDataAsCSV(internalGridData, streamToFile);
+						renderGridDataAsCSV(internalGridData, streamToFile, args.length > 7 ? args[7] : null);
 
 					} else { // render as json
 
@@ -1527,7 +1692,7 @@ public class Icarus {
 
 	}
 
-	private static void renderGridDataAsCSV(InternalGridData internalGridData, boolean streamToFile) {
+	private static void renderGridDataAsCSV(InternalGridData internalGridData, boolean streamToFile, String option) {
 
 		PrintStream ps = System.out;
 
@@ -1553,6 +1718,10 @@ public class Icarus {
 			}
 		}
 
+		// count the number of time voltage outside range 230 - 6% or 230 + 10%
+
+		int countBelow = 0, countAbove = 0;
+
 		ps.println("Time, Timestamp, Id, Voltage, Frequency, Power");
 
 		for (InternalGridDataPoint dataPoint : data) {
@@ -1571,17 +1740,48 @@ public class Icarus {
 
 			sbLine.append(',');
 
-			sbLine.append(dataPoint.getGridVoltage());
+			float fVoltage = dataPoint.getGridVoltage();
+
+			// acceptable UK mains voltage range is assumed to be 216.2 to 253
+
+			if (fVoltage > 253) {
+
+				countAbove++;
+
+			} else if (fVoltage < 216.2) {
+
+				countBelow++;
+			}
+
+			sbLine.append(fVoltage);
 
 			sbLine.append(',');
 
-			sbLine.append(dataPoint.getGridFrequency());
+			float fFrequency = dataPoint.getGridFrequency();
+
+			sbLine.append(fFrequency);
 
 			sbLine.append(',');
 
-			sbLine.append(dataPoint.getGridPower());
+			int iPower = dataPoint.getGridPower();
+
+			sbLine.append(iPower);
 
 			ps.println(sbLine.toString());
+		}
+
+		if ("1".equals(option)) {
+
+			String formula3 = "=min(D2:D" + (data.size() + 1) + ")";
+			String formula4 = "=min(E2:E" + (data.size() + 1) + ")";
+			String formula5 = "=min(F2:F" + (data.size() + 1) + ")";
+
+			String formula6 = "=max(D2:D" + (data.size() + 1) + ")";
+			String formula7 = "=max(E2:E" + (data.size() + 1) + ")";
+			String formula8 = "=max(F2:F" + (data.size() + 1) + ")";
+
+			ps.println(",minimum," + countBelow + "," + formula3 + "," + formula4 + "," + formula5);
+			ps.println(",maximum," + countAbove + "," + formula6 + "," + formula7 + "," + formula8);
 		}
 
 		if (streamToFile) {
@@ -1787,6 +1987,8 @@ public class Icarus {
 
 			V1SmartDeviceData data = getV1SmartDeviceData(uuid, page, pageSize);
 
+			//
+
 			results.addAll(data.getTimeAndPower());
 
 			V1Links links = data.getLinks();
@@ -1887,6 +2089,16 @@ public class Icarus {
 				}
 
 				long elapsedSeconds = nextTimestamp.toEpochSecond() - epochSecond;
+
+				if (elapsedSeconds < 0 || elapsedSeconds > 10000) {
+
+					// consider this an outlier
+
+					System.err.println(
+							"WARNING: possible data outlier: " + elapsedSeconds + " seconds @ " + timestamp.toString());
+
+					continue;
+				}
 
 				// how many watt-seconds does this represent?
 
@@ -2532,10 +2744,10 @@ public class Icarus {
 
 	}
 
-	private static String getRequest(URL url, String tokenKey) throws IOException {
-
-		return getRequest(url, true, tokenKey);
-	}
+//	private static String getRequest(URL url, String tokenKey) throws IOException {
+//
+//		return getRequest(url, true, tokenKey, false);
+//	}
 
 	private static String postRequest(URL url, String referer) throws IOException, URISyntaxException {
 
@@ -2607,7 +2819,28 @@ public class Icarus {
 		return tokenValue;
 	}
 
-	private static String getRequest(URL url, boolean authorisationRequired, String tokenKey) throws IOException {
+	private String getRequest(URL url) throws IOException {
+
+		return getRequest(url, true);
+	}
+
+	private static String getRequest(URL url, String tokenKey) throws IOException {
+
+		return getRequest(url, true, tokenKey, false);
+	}
+
+	private static String getRequest(URL url, boolean authorisationRequired) throws IOException {
+
+		return getRequest(url, authorisationRequired, null, false);
+	}
+
+	private static String getRequest(URL url, boolean authorisationRequired, boolean jsonRequest) throws IOException {
+
+		return getRequest(url, authorisationRequired, null, jsonRequest);
+	}
+
+	private static String getRequest(URL url, boolean authorisationRequired, String tokenKey, boolean jsonRequest)
+			throws IOException {
 
 		int status = 0;
 
@@ -2617,6 +2850,11 @@ public class Icarus {
 
 		con.setRequestProperty("Content-Type", contentType);
 		con.setRequestProperty("user-agent", userAgent);
+
+		if (jsonRequest) {
+
+			con.setRequestProperty("accept", "application/json");
+		}
 
 		con.setRequestMethod("GET");
 
@@ -2789,6 +3027,303 @@ public class Icarus {
 		String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
 
 		System.out.println(json);
+	}
+
+	private static ResultMessage getForecastSolar() {
+
+		ResultMessage result = null;
+
+		if (!"false".equalsIgnoreCase(forecastSolar)) {
+
+			try {
+
+				URL url = new URL(forecastSolar);
+
+				String json = getRequest(url, false, true); // request json, no auth needed on API
+
+//				System.out.println(json);
+
+				if (null == json || 0 == json.trim().length()) {
+
+					result = new ResultMessage();// empty object
+
+				} else {
+
+					result = mapper.readValue(json, ResultMessage.class);
+				}
+
+			} catch (Exception e) {
+
+				e.printStackTrace();
+
+				result = null;
+			}
+		}
+
+		return result;
+	}
+
+	private static ResultMessage readCachedSolarData(String keyDate) {
+
+		ResultMessage rm = null;
+
+		File fileSolar = new File(keyDate);
+
+		FileReader fr = null;
+
+		StringBuffer sb = new StringBuffer();
+
+		try {
+
+			fr = new FileReader(fileSolar);
+
+			BufferedReader br = new BufferedReader(fr);
+
+			while (br.ready()) {
+
+				String line = br.readLine();
+
+				if (null == line) {
+
+					break;
+				}
+				sb.append(line);
+				sb.append('\n');
+			}
+
+			br.close();
+
+			String json = sb.toString();
+
+			rm = mapper.readValue(json, ResultMessage.class);
+
+		} catch (FileNotFoundException e) {
+
+			// this is expected until data is cached
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+
+			if (null != fr) {
+
+				try {
+
+					fr.close();
+
+				} catch (IOException e) {
+
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+		return rm;
+	}
+
+	private static void cacheSolarData(ResultMessage rm) {
+
+		SolarResult sr = rm.getResult();
+
+		SolarMessage sm = rm.getMessage();
+
+		String json = null;
+
+		try {
+			json = mapper.writeValueAsString(sm);
+
+		} catch (JsonProcessingException e) {
+
+			e.printStackTrace();
+			json = "";
+		}
+
+		Set<String> keySet = sr.getKeySet();
+
+		for (String key : keySet) {
+
+			Integer value = sr.getValue(key);
+
+			File fileSolar = new File(key);
+
+			try {
+
+				FileWriter fileWriter = new FileWriter(fileSolar, false);
+
+				BufferedWriter solarDataWriter = new BufferedWriter(fileWriter);
+
+				solarDataWriter.append("{\"result\":{");
+				solarDataWriter.append("\"");
+				solarDataWriter.append(key);
+				solarDataWriter.append("\":");
+				solarDataWriter.append(value.toString());
+				solarDataWriter.append("},");
+				solarDataWriter.append("\"message\":");
+				solarDataWriter.append(json);
+				solarDataWriter.append("}");
+				solarDataWriter.newLine();
+
+				solarDataWriter.flush();
+				solarDataWriter.close();
+
+				fileWriter.close();
+
+			} catch (IOException e) {
+
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private static void purgeCache(String keyDate) {
+
+		File fileSolar = new File(keyDate);
+
+		fileSolar.delete();
+	}
+
+	private static ResultsStatus getSunriseSunset(String from, String to) {
+
+		ResultsStatus rs = null;
+
+		if (!"false".equalsIgnoreCase(sunriseSunsetApi)) {
+
+			try {
+
+				URL url = new URL(sunriseSunsetApi + "&date_start=" + from + "&date_end=" + to);
+
+				String json = getRequest(url, false, false); // request json, no auth needed on API
+
+				if (null == json || 0 == json.trim().length()) {
+
+					rs = new ResultsStatus();// empty object
+
+				} else {
+
+					rs = mapper.readValue(json, ResultsStatus.class);
+				}
+
+			} catch (Exception e) {
+
+				e.printStackTrace();
+
+				rs = null;
+			}
+		}
+
+		return rs;
+	}
+
+	private static ResultsStatus readCachedSunriseSunset() {
+
+		ResultsStatus rs = null;
+
+		File fileSunriseSunset = new File(sunriseSunsetFilename);
+
+		FileReader fr = null;
+
+		StringBuffer sb = new StringBuffer();
+
+		try {
+
+			fr = new FileReader(fileSunriseSunset);
+
+			BufferedReader br = new BufferedReader(fr);
+
+			while (br.ready()) {
+
+				String line = br.readLine();
+
+				if (null == line) {
+
+					break;
+				}
+				sb.append(line);
+				sb.append('\n');
+			}
+
+			br.close();
+
+			String json = sb.toString();
+
+			rs = mapper.readValue(json, ResultsStatus.class);
+
+		} catch (FileNotFoundException e) {
+
+			// this is expected until data is cached
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+
+			if (null != fr) {
+
+				try {
+
+					fr.close();
+
+				} catch (IOException e) {
+
+					e.printStackTrace();
+				}
+			}
+
+		}
+
+		return rs;
+	}
+
+	private static void cacheSunriseSunset(ResultsStatus rs) {
+
+		String json = null;
+
+		try {
+			json = mapper.writeValueAsString(rs);
+
+		} catch (JsonProcessingException e) {
+
+			e.printStackTrace();
+			json = "";
+		}
+
+		try {
+
+			FileWriter fileWriter = new FileWriter(sunriseSunsetFilename, false);
+
+			BufferedWriter bw = new BufferedWriter(fileWriter);
+
+			bw.append(json);
+			bw.newLine();
+
+			bw.flush();
+			bw.close();
+
+			fileWriter.close();
+
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+	}
+
+	private static DayResult getSunriseSunsetOnDay(String key, List<DayResult> results) {
+
+		DayResult result = null;
+
+		for (DayResult dr : results) {
+
+			if (key.equals(dr.getDate())) {
+
+				result = dr;
+
+				break;
+			}
+		}
+
+		return result;
 	}
 
 }
