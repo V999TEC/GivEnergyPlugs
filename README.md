@@ -42,6 +42,14 @@ Define a property file (such as __My.properties__) for your smart devices contai
 ```
 smart-device=insert_api_token_here
 inverter=insert_api_token_here
+#
+# Example: 5.6kWp PV panels @ 34 degrees tilt 12 degrees west of south (max generation around 40 mins after solar noon)
+#
+forecast.solar=https://api.forecast.solar/estimate/watthours/day/my_latitude/my_longitude/34/12/5.6
+forecast.max.age.seconds=21600
+#
+sunrise.sunset.api=https://api.sunrisesunset.io/json?lat=my_latitude&lng=my_longitude&timezone=UTC&&time_format=24
+sunrise.sunset.file=sunrise.sunset.json
 ```
 You can generate a GivEnergy API token for your api:smart-device and/or api:inverter here https://givenergy.cloud/account-settings/security
 
@@ -234,3 +242,62 @@ n.b. This can generate a lot of output, use with care and don't use repeatedly w
     "status" : "NORMAL"
   }, {
 ```
+
+### Example 13  
+Get sunrise, solar noon and sunset times for the specified latitude & longitude
+for today and tomorrow
+```
+java -jar icarus.jar ../my.properties sun
+```
+The results are in json format by default in a file called sunrise.sunset.json
+```
+{
+  "results" : [ {
+    "date" : "2025-03-04",
+    "sunrise" : "06:49:31",
+    "sunset" : "17:51:31",
+    "solar_noon" : "12:20:31"
+  }, {
+    "date" : "2025-03-05",
+    "sunrise" : "06:47:19",
+    "sunset" : "17:53:17",
+    "solar_noon" : "12:20:18"
+  } ],
+  "status" : "OK"
+}
+```
+
+### Example 14  
+Get a PV forecast for the location for today and tomorrow
+```
+java -jar icarus.jar ../my.properties forecast solar
+```
+The results are in json format and two files are created in the form YYYY_MM_DD
+```
+{"result":{"2025-03-04":19699},"message":{
+  "code" : 0,
+  "type" : "success",
+  "text" : "",
+  "pid" : "1p1h2S87",
+  "info" : {
+    "latitude" : my_latitude,
+    "longitude" : my_longitude,
+    "distance" : 0,
+    "place" : "my_approx_address",
+    "timezone" : "Europe/London",
+    "time" : "2025-03-04T13:00:26+00:00",
+    "time_utc" : "2025-03-04T13:00:26+00:00"
+  },
+  "ratelimit" : {
+    "zone" : "IP 9.9.9.9",
+    "period" : 3600,
+    "limit" : 12,
+    "remaining" : 11
+  }
+}}
+```
+
+To API provider allows limited calls each day and so to protect the 3rd party
+the property value will not allow repeated calls with a period less than specified
+```forecast.max.age.seconds=21600```
+
