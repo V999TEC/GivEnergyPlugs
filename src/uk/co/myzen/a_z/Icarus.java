@@ -40,6 +40,8 @@ import internal.InternalData;
 import internal.InternalDataPoint;
 import internal.InternalGridData;
 import internal.InternalGridDataPoint;
+import internal.InternalLogData;
+import internal.InternalLogDataEvent;
 import uk.co.myzen.a_z.json.forecast.solar.ResultMessage;
 import uk.co.myzen.a_z.json.forecast.solar.SolarMessage;
 import uk.co.myzen.a_z.json.forecast.solar.SolarResult;
@@ -82,6 +84,8 @@ public class Icarus {
 	private static final String body = "{" + context + "}";
 
 	private static final String baseUrl = "https://api.givenergy.cloud/v1";
+
+	private static final String baseInternalUrl = "https://givenergy.cloud/internal-api";
 
 	private final static String KEY_FORECAST_SOLAR = "forecast.solar";
 
@@ -207,7 +211,9 @@ public class Icarus {
 
 					alias = args[1].trim();
 
-					if ("sun".equals(alias)) {
+					if ("internal".equals(alias)) {
+
+					} else if ("sun".equals(alias)) {
 
 					} else if (args.length > 2) {
 
@@ -286,6 +292,10 @@ public class Icarus {
 
 					System.out.println(key + "=" + smartDevice.getUuid());
 				}
+
+			} else if ("internal".equals(alias)) {
+
+				getInternalInverterLog(1, 2, 100);
 
 			} else if (0 == "login".compareToIgnoreCase(alias)) {
 
@@ -370,33 +380,41 @@ public class Icarus {
 						// we have a value for today but it might have been predicted yesterday or be
 						// out of date
 
-						// check if the cache value was forecast today and update if too old
+						// don't try to call the API again if we have exceeded our rate limit
+						// this may be indicative of setting property forecast.max.age.seconds too low
 
-						String timeCached = rm.getMessage().getInfo().getTimeUTC();
+						Integer remaining = rm.getMessage().getRateLimit().getRemaining();
 
-						ZonedDateTime zdtCached = ZonedDateTime.parse(timeCached,
-								DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+						if (remaining > 0) {
 
-						long secondsOld = zdtNow.toEpochSecond() - zdtCached.toEpochSecond();
+							// check if the cache value was forecast today and update if too old
 
-						// how long ago was the solar forecast predicted ?
-						// eg more than 8 hours or yesterday
+							String timeCached = rm.getMessage().getInfo().getTimeUTC();
 
-						if (secondsOld > Integer.parseInt(forecastMaxAgeSeconds)
-								|| !key.equals(timeCached.substring(0, 10))) {
+							ZonedDateTime zdtCached = ZonedDateTime.parse(timeCached,
+									DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
-							// will be today's value but cached yesterday, so we can attempt to do better
-							// estimate
+							long secondsOld = zdtNow.toEpochSecond() - zdtCached.toEpochSecond();
 
-							ResultMessage rm2 = getForecastSolar();
+							// how long ago was the solar forecast predicted ?
+							// eg more than 8 hours or yesterday
 
-							if (null != rm2) {
+							if (secondsOld > Integer.parseInt(forecastMaxAgeSeconds)
+									|| !key.equals(timeCached.substring(0, 10))) {
 
-								// assume we have an updated value for today/tomorrow
+								// will be today's value but cached yesterday, so we can attempt to do better
+								// estimate
 
-								cacheSolarData(rm2);
+								ResultMessage rm2 = getForecastSolar();
 
-								rm = rm2;
+								if (null != rm2) {
+
+									// assume we have an updated value for today/tomorrow
+
+									cacheSolarData(rm2);
+
+									rm = rm2;
+								}
 							}
 						}
 					}
@@ -2584,63 +2602,63 @@ public class Icarus {
 //		return json;
 //	}
 
-//	private static InternalLogData getInternalInverterLog(int fromPage, int toPage, int itemsPerPage)
-//			throws MalformedURLException, IOException, URISyntaxException {
-//
-//		InternalLogData result = new InternalLogData();
-//
-//		String bodyValue = "{\"search\":\"\",\"filter_errors\":true,\"filter_same_value_responses\":true,\"server_user\":0,\"read_write\":0,\"inverter_serial\":\""
-//				+ properties.getProperty("serial") + "\"}";
-//
-//		List<InternalLogDataEvent> logDataEvents = new ArrayList<InternalLogDataEvent>();
-//
-//		for (int p = fromPage; p < toPage; p++) {
-//
-//			if (0 != logDataEvents.size()) {
-//
-//				// be sympathetic to server upon repeated calls
-//
-//				try {
-//
-//					Thread.sleep(5000L);
-//
-//				} catch (InterruptedException e) {
-//
-//					System.err.println("Error: interruption before obtaining all data: " + e.getMessage());
-//					e.printStackTrace();
-//
-//					break;
-//				}
-//			}
-//
-//			String json = postRequest(new URL(baseInternalUrl + "/paginate/inverter-register-record?page="
-//					+ String.valueOf(p) + "&itemsPerPage=" + String.valueOf(itemsPerPage)), "inverter", bodyValue);
-//
-//			InternalLogData pageOfEvents = null;
-//
-//			if (null == json || 0 == json.trim().length()) {
-//
-//				System.err.println("Error obtaining data. Check the token in property file!");
-//
-//				break;
-//			}
-//
-//			pageOfEvents = mapper.readValue(json, InternalLogData.class);
-//
-//			int numOnPage = pageOfEvents.getData().size();
-//
-//			for (int e = 0; e < numOnPage; e++) {
-//
-//				InternalLogDataEvent event = pageOfEvents.getData().get(e);
-//
-//				logDataEvents.add(event);
-//			}
-//		}
-//
-//		result.setData(logDataEvents);
-//
-//		return result;
-//	}
+	private static InternalLogData getInternalInverterLog(int fromPage, int toPage, int itemsPerPage)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		InternalLogData result = new InternalLogData();
+
+		String bodyValue = "{\"search\":\"\",\"filter_errors\":true,\"filter_same_value_responses\":true,\"server_user\":0,\"read_write\":0,\"inverter_serial\":\""
+				+ properties.getProperty("serial") + "\"}";
+
+		List<InternalLogDataEvent> logDataEvents = new ArrayList<InternalLogDataEvent>();
+
+		for (int p = fromPage; p < toPage; p++) {
+
+			if (0 != logDataEvents.size()) {
+
+				// be sympathetic to server upon repeated calls
+
+				try {
+
+					Thread.sleep(5000L);
+
+				} catch (InterruptedException e) {
+
+					System.err.println("Error: interruption before obtaining all data: " + e.getMessage());
+					e.printStackTrace();
+
+					break;
+				}
+			}
+
+			String json = postRequest(new URL(baseInternalUrl + "/paginate/inverter-register-record?page="
+					+ String.valueOf(p) + "&itemsPerPage=" + String.valueOf(itemsPerPage)), "inverter", bodyValue);
+
+			InternalLogData pageOfEvents = null;
+
+			if (null == json || 0 == json.trim().length()) {
+
+				System.err.println("Error obtaining data. Check the token in property file!");
+
+				break;
+			}
+
+			pageOfEvents = mapper.readValue(json, InternalLogData.class);
+
+			int numOnPage = pageOfEvents.getData().size();
+
+			for (int e = 0; e < numOnPage; e++) {
+
+				InternalLogDataEvent event = pageOfEvents.getData().get(e);
+
+				logDataEvents.add(event);
+			}
+		}
+
+		result.setData(logDataEvents);
+
+		return result;
+	}
 
 	private static V1DataSystem getV1InverterSystem() throws MalformedURLException, IOException {
 
@@ -2772,10 +2790,10 @@ public class Icarus {
 //		return getRequest(url, true, tokenKey, false);
 //	}
 
-	private static String postRequest(URL url, String referer) throws IOException, URISyntaxException {
-
-		return postRequest(url, true, "Account", null, referer);
-	}
+//	private static String postRequest(URL url, String referer) throws IOException, URISyntaxException {
+//
+//		return postRequest(url, true, "Account", null, referer);
+//	}
 
 	private static String postRequest(URL url, String tokenKey, String body) throws IOException, URISyntaxException {
 
@@ -2842,19 +2860,19 @@ public class Icarus {
 		return tokenValue;
 	}
 
-	private String getRequest(URL url) throws IOException {
+//	private String getRequest(URL url) throws IOException {
+//
+//		return getRequest(url, true);
+//	}
 
-		return getRequest(url, true);
-	}
+//	private static String getRequest(URL url, boolean authorisationRequired) throws IOException {
+//
+//		return getRequest(url, authorisationRequired, null, false);
+//	}
 
 	private static String getRequest(URL url, String tokenKey) throws IOException {
 
 		return getRequest(url, true, tokenKey, false);
-	}
-
-	private static String getRequest(URL url, boolean authorisationRequired) throws IOException {
-
-		return getRequest(url, authorisationRequired, null, false);
 	}
 
 	private static String getRequest(URL url, boolean authorisationRequired, boolean jsonRequest) throws IOException {
