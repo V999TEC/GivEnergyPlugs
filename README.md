@@ -16,11 +16,13 @@ Latest snapshot icarus.jar in __/download/__ or choose release version
 Or see https://github.com/V999TEC/GivEnergyPlugs/releases  
 for complete source code & release version of __icarus.jar__
 
-### Syntax
+### Syntax for smart devices
 
 Key "smart-device" value needs to be defined in the property file for GivEnergy API Token [api:smart-device] for successful use of following option:
 
 ```java -jar icarus.jar property_file_name  [alias [from_timestamp [to_timestamp]]]```
+
+### Syntax for inverter
 
 Key "inverter" value needs to be defined in the property file for GivEnergy API Token [api:inverter] for successful use of following options:
 
@@ -30,14 +32,19 @@ Key "inverter" value needs to be defined in the property file for GivEnergy API 
 
 ```java -jar icarus.jar ./my.properties inverter  setting write id HH:MM```
 
-### Extended syntax
-
 ```java -jar icarus.jar ./my.properties inverter meter [today [ac_charge|consumption|solar|battery [charge|discharge] | grid [import|export]]]```
 
 ```java -jar icarus.jar ./my.properties inverter system [battery [percent|power|temperature] |inverter [power|temperature|eps_power_output_voltage|output_frequency]]```
 
+### Syntax for other functions
+
+```java -jar icarus.jar ../my.properties sun```
+
+```java -jar icarus.jar ../my.properties forecast solar```
+
+
 ### Usage
-Define a property file (such as __My.properties__) for your smart devices containing your generated api:smart-device token for example:
+Define a property file (such as __my.properties__) for your smart devices containing your generated api:smart-device token for example:
 
 ```
 smart-device=insert_api_token_here
@@ -297,7 +304,9 @@ The results are in json format and two files are created in the form YYYY_MM_DD
 }}
 ```
 
-To API provider allows limited calls each day and so to protect the 3rd party
-the property value will not allow repeated calls with a period less than specified
+To API provider allows limited calls each day 
+
+Our property value will cause caching of results when icarus.jar is called with shorter periods
+thus protecting the 3rd party
 ```forecast.max.age.seconds=21600```
 
