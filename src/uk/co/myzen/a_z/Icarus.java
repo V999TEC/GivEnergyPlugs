@@ -1743,7 +1743,7 @@ public class Icarus {
 
 		if (streamToFile) {
 
-			InternalGridDataPoint recent = data.get(0);
+			InternalGridDataPoint recent = data.get(data.size() - 1);
 
 			String recentDate = recent.getTime().substring(0, 10);
 
