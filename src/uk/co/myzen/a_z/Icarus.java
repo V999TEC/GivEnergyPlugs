@@ -582,6 +582,9 @@ public class Icarus {
 
 				V1SmartDeviceData sample = getV1SmartDeviceData(uuid, page, pageSize);
 
+				System.err.print("\t" + sample.getMeta().getCurrentPage() + "/" + sample.getMeta().getLastPage() + "("
+						+ sample.getMeta().getPerPage() + ")" + sample.getMeta().getTotal() + "\n");
+
 				List<V1TimeAndPower> testList = sample.getTimeAndPower();
 
 				for (V1TimeAndPower test : testList) {
@@ -2850,7 +2853,7 @@ public class Icarus {
 		String text = (expired ? "EXCEPTION" : "INFO") + ": Property key '" + tokenKey + "' containing JWT token for "
 				+ scopes + " " + (expired ? "has expired" : "will expire") + " " + timeWhen.toString();
 
-		System.err.println(text);
+		System.err.print(text);
 
 		if (expired) {
 
