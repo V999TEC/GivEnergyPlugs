@@ -932,750 +932,811 @@ public class Icarus {
 					renderInverterValue(data);
 				}
 
-			} else if ("macro".equalsIgnoreCase(args[2])) {
+			} else if ("battery".equalsIgnoreCase(args[2])) {
 
-				// inverter macro X [HH:mm HH:mm [ Soc ]]
-				// if Soc not specified or it is "" or < 0 then no change
-				// if Soc > 100 SoC set to 100
+				if (args.length < 4) {
 
-				// if no time(s) specified than assume 00:00 implied
+					// "validation" : "Value must be one of: 0, 1, 2, 3 (Not Paused, Pause Charge,
+					// Pause Discharge, Pause Charge & Discharge)"
+					System.out.println(
+							"Expect 'Not Paused', 'Pause Charge', 'Pause Discharge', 'Pause Charge & Discharge'");
 
-				int soc = -1; // implies don't set value
+					V1DataStringValue value = postV1InverterSettingReadString(96);
 
-				if (7 == args.length) { // assume a SoC specified or ""
+					System.out.println("response is: '" + value.getData().getValue() + "'");
 
-					if (0 != "".compareTo(args[6])) {
+//					renderInverterValue(value);
+				} else {
 
-						soc = Integer.parseInt(args[6]);
+					V1DataStringValue stringValue = null;
 
-						if (soc > 100) {
+					int n = -1;
 
-							soc = 100;
+					try {
+						n = Integer.parseInt(args[3]);
+
+					} catch (NumberFormatException e) {
+
+						// assume String
+
+						if (0 == "Not Paused".compareTo(args[3])) {
+
+							n = 0;
+
+						} else if (0 == "Pause Charge".compareTo(args[3])) {
+
+							n = 1;
+
+						} else if (0 == "Pause Discharge".compareTo(args[3])) {
+
+							n = 2;
+
+						} else if (0 == "Pause Charge & Discharge".compareTo(args[3])) {
+
+							n = 3;
 						}
 					}
+
+					if (n > -1 && n < 4) {
+
+						stringValue = postV1InverterSettingWriteInt(96, n);
+
+						renderInverterValue(stringValue);
+
+					} else {
+
+						System.err.println(
+								"Expected \"Not Paused\", \"Pause Charge\", \"Pause Discharge\", \"Pause Charge & Discharge\" or value 0 through 3 respectively");
+
+					}
+
 				}
 
-				if (args.length > 3) {
+			}
 
-					if ("A".equalsIgnoreCase(args[3])) {
+		} else if ("macro".equalsIgnoreCase(args[2])) {
 
-						// macro A HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
+			// inverter macro X [HH:mm HH:mm [ Soc ]]
+			// if Soc not specified or it is "" or < 0 then no change
+			// if Soc > 100 SoC set to 100
 
-						postV1InverterSettingWriteString(64, args.length < 5 ? "00:00" : args[4]);
-						// AC
-						// Charge
-						// 1
-						// Start
-						// Time or
-						// midnight
+			// if no time(s) specified than assume 00:00 implied
 
-						postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
-						// AC
-						// Charge
-						// 1
-						// End
-						// Time or
-						// midnight
+			int soc = -1; // implies don't set value
 
-						if (soc > -1) {
+			if (7 == args.length) { // assume a SoC specified or ""
 
-							postV1InverterSettingWrite(101, soc); // AC Charge 1 Upper
-																	// SOC %
-																	// Limit
-						}
+				if (0 != "".compareTo(args[6])) {
 
-					} else if ("B".equalsIgnoreCase(args[3])) {
+					soc = Integer.parseInt(args[6]);
 
-						// macro B HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
+					if (soc > 100) {
 
-						// 28 & 29 or 102 & 103
-
-						postV1InverterSettingWriteString(102, args.length < 5 ? "00:00" : args[4]);
-						// AC
-						// Charge
-						// 2
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
-						// AC
-						// Charge
-						// 2
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(104, soc); // AC Charge 2 Upper
-																	// SOC %
-																	// Limit
-						}
-
-					} else if ("C".equalsIgnoreCase(args[3])) {
-
-						// macro B HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(105, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 3
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 3
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(107, soc); // AC Charge 3 Upper
-																	// SOC %
-																	// Limit
-						}
-
-					} else if ("D".equalsIgnoreCase(args[3])) {
-
-						// macro B HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						// 28 & 29 or 102 & 103
-
-						postV1InverterSettingWriteString(108, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 4
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 4
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(110, soc); // AC Charge 4 Upper
-																	// SOC %
-																	// Limit
-						}
-
-					} else if ("E".equalsIgnoreCase(args[3])) {
-
-						// macro B HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(111, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 5
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 5
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(113, soc); // AC Charge 5 Upper
-																	// SOC %
-																	// Limit
-						}
-					} else if ("F".equalsIgnoreCase(args[3])) {
-
-						// macro F HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(114, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 6
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 6
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(116, soc); // AC Charge 6 Upper
-																	// SOC %
-																	// Limit
-						}
-					} else if ("G".equalsIgnoreCase(args[3])) {
-
-						// macro G HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(117, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 7
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 7
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(119, soc); // AC Charge 7 Upper
-																	// SOC %
-																	// Limit
-						}
-					} else if ("H".equalsIgnoreCase(args[3])) {
-
-						// macro H HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(120, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 8
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 8
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(122, soc); // AC Charge 8 Upper
-																	// SOC %
-																	// Limit
-						}
-					} else if ("I".equalsIgnoreCase(args[3])) {
-
-						// macro I HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(123, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 9
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 9
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(125, soc); // AC Charge 9 Upper
-																	// SOC %
-																	// Limit
-						}
-					} else if ("J".equalsIgnoreCase(args[3])) {
-
-						// macro J HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(126, args.length < 5 ? "00:00" : args[4]); // AC
-						// Charge
-						// 10
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 10
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(128, soc); // AC Charge 10 Upper
-																	// SOC %
-																	// Limit
-						}
-					} else if ("K".equalsIgnoreCase(args[3])) {
-
-						// macro K HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(53, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 1
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(54, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 10
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(129, soc); // DC Discharge 1 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("L".equalsIgnoreCase(args[3])) {
-
-						// macro L HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(41, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 2
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(42, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 2
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(130, soc); // DC Discharge 2 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("M".equalsIgnoreCase(args[3])) {
-
-						// macro M HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(131, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 3
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(132, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 3
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(133, soc); // DC Discharge 3 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("N".equalsIgnoreCase(args[3])) {
-
-						// macro N HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(134, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 4
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(135, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 4
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(136, soc); // DC Discharge 4 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("O".equalsIgnoreCase(args[3])) {
-
-						// macro O HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(137, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 5
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(138, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 5
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(139, soc); // DC Discharge 5 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("P".equalsIgnoreCase(args[3])) {
-
-						// macro P HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(140, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 6
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(141, args.length < 6 ? "00:00" : args[5]); // AC
-						// DC Discharge
-						// 6
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(142, soc); // DC Discharge 6 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("Q".equalsIgnoreCase(args[3])) {
-
-						// macro Q HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(143, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 7
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(144, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 7
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(145, soc); // DC Discharge 7 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("R".equalsIgnoreCase(args[3])) {
-
-						// macro R HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(146, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 8
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(148, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 8
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(148, soc); // DC Discharge 8 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("S".equalsIgnoreCase(args[3])) {
-
-						// macro S HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(149, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 9
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(150, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 9
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(151, soc); // DC Discharge 9 Lower
-																	// SOC %
-																	// Limit
-						}
-					} else if ("T".equalsIgnoreCase(args[3])) {
-
-						// macro T HH:mm HH:mm 0-100
-						// set start time, end time and SoC of timed battery charge
-
-						postV1InverterSettingWriteString(152, args.length < 5 ? "00:00" : args[4]);
-						// DC Discharge
-						// 10
-						// Start
-						// Time or
-						// midnight
-
-						postV1InverterSettingWriteString(153, args.length < 6 ? "00:00" : args[5]);
-						// DC Discharge
-						// 10
-						// End
-						// Time or
-						// midnight
-
-						if (soc > -1) {
-
-							postV1InverterSettingWrite(154, soc); // DC Discharge 10 Lower
-																	// SOC %
-																	// Limit
-						}
+						soc = 100;
 					}
 				}
+			}
 
-			} else if ("setting".equalsIgnoreCase(args[2])) {
+			if (args.length > 3) {
 
-				if (args.length > 4) {
+				if ("A".equalsIgnoreCase(args[3])) {
 
-					Integer id = Integer.parseInt(args[4]);
+					// macro A HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
 
-					if ("read".equalsIgnoreCase(args[3])) {
+					postV1InverterSettingWriteString(64, args.length < 5 ? "00:00" : args[4]);
+					// AC
+					// Charge
+					// 1
+					// Start
+					// Time or
+					// midnight
 
-						System.out.println("read setting with id:" + id);
+					postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
+					// AC
+					// Charge
+					// 1
+					// End
+					// Time or
+					// midnight
 
-						Object value = null;
+					if (soc > -1) {
 
-						switch (id) {
-
-						case 17: // Enable AC Charge Upper % Limit
-						case 24: // Enable Eco Mode
-						case 56: // Enable DC Discharge
-						case 66: // AC Charge Enable
-						case 271: // Enable EPS
-						case 380: // Enable Plant EMS Control
-
-							value = postV1InverterSettingReadBoolean(id);
-							break;
-
-						case 28: // AC Charge 2 Start Time
-						case 29: // AC Charge 2 End Time
-						case 41: // DC Discharge 2 Start Time
-						case 42: // DC Discharge 2 End Time
-						case 53: // DC Discharge 1 Start Time
-						case 54: // DC Discharge 1 End Time
-						case 64: // AC Charge 1 Start Time
-						case 65: // AC Charge 1 End Time
-						case 102: // AC Charge 2 Start Time
-						case 103: // AC Charge 2 End Time
-						case 105: // AC Charge 3 Start Time
-						case 106: // AC Charge 3 End Time
-						case 108: // AC Charge 4 Start Time
-						case 109: // AC Charge 4 End Time
-						case 111: // AC Charge 5 Start Time
-						case 112: // AC Charge 5 End Time
-						case 114: // AC Charge 6 Start Time
-						case 115: // AC Charge 6 End Time
-						case 117: // AC Charge 7 Start Time
-						case 118: // AC Charge 7 End Time
-						case 120: // AC Charge 8 Start Time
-						case 121: // AC Charge 8 End Time
-						case 123: // AC Charge 9 Start Time
-						case 124: // AC Charge 9 End Time
-						case 126: // AC Charge 10 Start Time
-						case 127: // AC Charge 10 End Time
-						case 131: // DC Discharge 3 Start Time
-						case 132: // DC Discharge 3 End Time
-						case 134: // DC Discharge 4 Start Time
-						case 135: // DC Discharge 4 End Time
-						case 137: // DC Discharge 5 Start Time
-						case 138: // DC Discharge 5 End Time
-						case 140: // DC Discharge 6 Start Time
-						case 141: // DC Discharge 6 End Time
-						case 143: // DC Discharge 7 Start Time
-						case 144: // DC Discharge 7 End Time
-						case 146: // DC Discharge 8 Start Time
-						case 147: // DC Discharge 8 End Time
-						case 149: // DC Discharge 9 Start Time
-						case 150: // DC Discharge 9 End Time
-						case 152: // DC Discharge 10 Start Time
-						case 153: // DC Discharge 10 End Time
-						case 155: // Pause Battery Start Time
-						case 156: // Pause Battery End Time
-						case 265: // Export Power Priority
-						case 384: // Discharge Start Time Slot 1
-						case 385: // Discharge End Time Slot 1
-						case 387: // Discharge Start Time Slot 2
-						case 388: // Discharge End Time Slot 2
-						case 390: // Discharge Start Time Slot 3
-						case 391: // Discharge End Time Slot 3
-						case 393: // Charge Start Time Slot 1
-						case 394: // Charge End Time Slot 1
-						case 396: // Charge Start Time Slot 2
-						case 397: // Charge End Time Slot 2
-						case 399: // Charge Start Time Slot 3
-						case 400: // Charge End Time Slot 3
-
-							value = postV1InverterSettingReadString(id);
-							break;
-
-						case 72: // Battery Charge Power
-						case 73: // Battery Discharge Power
-						default:
-							value = postV1InverterSettingReadInteger(id);
-							break;
-						}
-
-						System.out.println("response is: ");
-
-						renderInverterValue(value);
-
-					} else if ("write".equalsIgnoreCase(args[3]) && args.length > 5) {
-
-						System.out.println("write setting with id:" + id + " new value:" + args[5]);
-
-						Object value = null;
-
-						switch (id) {
-
-						case 17: // Enable AC Charge Upper % Limit
-						case 24: // Enable Eco Mode
-						case 56: // Enable DC Discharge
-						case 66: // AC Charge Enable
-						case 271: // Enable EPS
-						case 380: // Enable Plant EMS Control
-
-							Boolean bool = Boolean.parseBoolean(args[5]);
-
-							value = postV1InverterSettingWriteBoolean(id, bool);
-							break;
-
-						case 28: // AC Charge 2 Start Time
-						case 29: // AC Charge 2 End Time
-						case 41: // DC Discharge 2 Start Time
-						case 42: // DC Discharge 2 End Time
-						case 53: // DC Discharge 1 Start Time
-						case 54: // DC Discharge 1 End Time
-						case 64: // AC Charge 1 Start Time
-						case 65: // AC Charge 1 End Time
-						case 102: // AC Charge 2 Start Time
-						case 103: // AC Charge 2 End Time
-						case 105: // AC Charge 3 Start Time
-						case 106: // AC Charge 3 End Time
-						case 108: // AC Charge 4 Start Time
-						case 109: // AC Charge 4 End Time
-						case 111: // AC Charge 5 Start Time
-						case 112: // AC Charge 5 End Time
-						case 114: // AC Charge 6 Start Time
-						case 115: // AC Charge 6 End Time
-						case 117: // AC Charge 7 Start Time
-						case 118: // AC Charge 7 End Time
-						case 120: // AC Charge 8 Start Time
-						case 121: // AC Charge 8 End Time
-						case 123: // AC Charge 9 Start Time
-						case 124: // AC Charge 9 End Time
-						case 126: // AC Charge 10 Start Time
-						case 127: // AC Charge 10 End Time
-						case 131: // DC Discharge 3 Start Time
-						case 132: // DC Discharge 3 End Time
-						case 134: // DC Discharge 4 Start Time
-						case 135: // DC Discharge 4 End Time
-						case 137: // DC Discharge 5 Start Time
-						case 138: // DC Discharge 5 End Time
-						case 140: // DC Discharge 6 Start Time
-						case 141: // DC Discharge 6 End Time
-						case 143: // DC Discharge 7 Start Time
-						case 144: // DC Discharge 7 End Time
-						case 146: // DC Discharge 8 Start Time
-						case 147: // DC Discharge 8 End Time
-						case 149: // DC Discharge 9 Start Time
-						case 150: // DC Discharge 9 End Time
-						case 152: // DC Discharge 10 Start Time
-						case 153: // DC Discharge 10 End Time
-						case 155: // Pause Battery Start Time
-						case 156: // Pause Battery End Time
-						case 265: // Export Power Priority
-						case 384: // Discharge Start Time Slot 1
-						case 385: // Discharge End Time Slot 1
-						case 387: // Discharge Start Time Slot 2
-						case 388: // Discharge End Time Slot 2
-						case 390: // Discharge Start Time Slot 3
-						case 391: // Discharge End Time Slot 3
-						case 393: // Charge Start Time Slot 1
-						case 394: // Charge End Time Slot 1
-						case 396: // Charge Start Time Slot 2
-						case 397: // Charge End Time Slot 2
-						case 399: // Charge Start Time Slot 3
-						case 400: // Charge End Time Slot 3
-
-							String string = args[5];
-
-							value = postV1InverterSettingWriteString(id, string);
-							break;
-
-						case 72: // Battery Charge Power
-						case 73: // Battery Discharge Power
-
-						case 101: // AC Charge 1 Upper SOC % Limit
-						case 104: // AC Charge 2 Upper SOC % Limit
-						case 107: // AC Charge 3 Upper SOC % Limit
-						case 110: // AC Charge 4 Upper SOC % Limit
-						case 113: // AC Charge 5 Upper SOC % Limit
-						case 116: // AC Charge 6 Upper SOC % Limit
-						case 119: // AC Charge 7 Upper SOC % Limit
-						case 122: // AC Charge 8 Upper SOC % Limit
-						case 125: // AC Charge 9 Upper SOC % Limit
-						case 128: // AC Charge 10 Upper SOC % Limit
-
-						default:
-							Integer integer = Integer.parseInt(args[5]);
-
-							value = postV1InverterSettingWrite(id, integer);
-							break;
-						}
-
-						System.out.println("response is: ");
-
-						renderInverterValue(value);
+						postV1InverterSettingWriteInteger(101, soc); // AC Charge 1 Upper
+						// SOC %
+						// Limit
 					}
+
+				} else if ("B".equalsIgnoreCase(args[3])) {
+
+					// macro B HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					// 28 & 29 or 102 & 103
+
+					postV1InverterSettingWriteString(102, args.length < 5 ? "00:00" : args[4]);
+					// AC
+					// Charge
+					// 2
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
+					// AC
+					// Charge
+					// 2
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(104, soc); // AC Charge 2 Upper
+						// SOC %
+						// Limit
+					}
+
+				} else if ("C".equalsIgnoreCase(args[3])) {
+
+					// macro B HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(105, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 3
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 3
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(107, soc); // AC Charge 3 Upper
+						// SOC %
+						// Limit
+					}
+
+				} else if ("D".equalsIgnoreCase(args[3])) {
+
+					// macro B HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					// 28 & 29 or 102 & 103
+
+					postV1InverterSettingWriteString(108, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 4
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 4
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(110, soc); // AC Charge 4 Upper
+						// SOC %
+						// Limit
+					}
+
+				} else if ("E".equalsIgnoreCase(args[3])) {
+
+					// macro B HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(111, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 5
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 5
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(113, soc); // AC Charge 5 Upper
+						// SOC %
+						// Limit
+					}
+				} else if ("F".equalsIgnoreCase(args[3])) {
+
+					// macro F HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(114, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 6
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 6
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(116, soc); // AC Charge 6 Upper
+						// SOC %
+						// Limit
+					}
+				} else if ("G".equalsIgnoreCase(args[3])) {
+
+					// macro G HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(117, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 7
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 7
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(119, soc); // AC Charge 7 Upper
+						// SOC %
+						// Limit
+					}
+				} else if ("H".equalsIgnoreCase(args[3])) {
+
+					// macro H HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(120, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 8
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 8
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(122, soc); // AC Charge 8 Upper
+						// SOC %
+						// Limit
+					}
+				} else if ("I".equalsIgnoreCase(args[3])) {
+
+					// macro I HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(123, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 9
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 9
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(125, soc); // AC Charge 9 Upper
+						// SOC %
+						// Limit
+					}
+				} else if ("J".equalsIgnoreCase(args[3])) {
+
+					// macro J HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(126, args.length < 5 ? "00:00" : args[4]); // AC
+					// Charge
+					// 10
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
+					// Charge
+					// 10
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(128, soc); // AC Charge 10 Upper
+						// SOC %
+						// Limit
+					}
+				} else if ("K".equalsIgnoreCase(args[3])) {
+
+					// macro K HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(53, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 1
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(54, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 10
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(129, soc); // DC Discharge 1 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("L".equalsIgnoreCase(args[3])) {
+
+					// macro L HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(41, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 2
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(42, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 2
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(130, soc); // DC Discharge 2 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("M".equalsIgnoreCase(args[3])) {
+
+					// macro M HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(131, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 3
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(132, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 3
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(133, soc); // DC Discharge 3 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("N".equalsIgnoreCase(args[3])) {
+
+					// macro N HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(134, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 4
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(135, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 4
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(136, soc); // DC Discharge 4 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("O".equalsIgnoreCase(args[3])) {
+
+					// macro O HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(137, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 5
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(138, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 5
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(139, soc); // DC Discharge 5 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("P".equalsIgnoreCase(args[3])) {
+
+					// macro P HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(140, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 6
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(141, args.length < 6 ? "00:00" : args[5]); // AC
+					// DC Discharge
+					// 6
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(142, soc); // DC Discharge 6 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("Q".equalsIgnoreCase(args[3])) {
+
+					// macro Q HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(143, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 7
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(144, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 7
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(145, soc); // DC Discharge 7 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("R".equalsIgnoreCase(args[3])) {
+
+					// macro R HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(146, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 8
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(148, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 8
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(148, soc); // DC Discharge 8 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("S".equalsIgnoreCase(args[3])) {
+
+					// macro S HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(149, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 9
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(150, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 9
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(151, soc); // DC Discharge 9 Lower
+						// SOC %
+						// Limit
+					}
+				} else if ("T".equalsIgnoreCase(args[3])) {
+
+					// macro T HH:mm HH:mm 0-100
+					// set start time, end time and SoC of timed battery charge
+
+					postV1InverterSettingWriteString(152, args.length < 5 ? "00:00" : args[4]);
+					// DC Discharge
+					// 10
+					// Start
+					// Time or
+					// midnight
+
+					postV1InverterSettingWriteString(153, args.length < 6 ? "00:00" : args[5]);
+					// DC Discharge
+					// 10
+					// End
+					// Time or
+					// midnight
+
+					if (soc > -1) {
+
+						postV1InverterSettingWriteInteger(154, soc); // DC Discharge 10 Lower
+						// SOC %
+						// Limit
+					}
+				}
+			}
+
+		} else if ("setting".equalsIgnoreCase(args[2])) {
+
+			if (args.length > 4) {
+
+				Integer id = Integer.parseInt(args[4]);
+
+				if ("read".equalsIgnoreCase(args[3])) {
+
+					System.out.println("read setting with id:" + id);
+
+					Object value = null;
+
+					switch (id) {
+
+					case 17: // Enable AC Charge Upper % Limit
+					case 24: // Enable Eco Mode
+					case 56: // Enable DC Discharge
+					case 66: // AC Charge Enable
+					case 271: // Enable EPS
+					case 380: // Enable Plant EMS Control
+
+						value = postV1InverterSettingReadBoolean(id);
+						break;
+
+					case 28: // AC Charge 2 Start Time
+					case 29: // AC Charge 2 End Time
+					case 41: // DC Discharge 2 Start Time
+					case 42: // DC Discharge 2 End Time
+					case 53: // DC Discharge 1 Start Time
+					case 54: // DC Discharge 1 End Time
+					case 64: // AC Charge 1 Start Time
+					case 65: // AC Charge 1 End Time
+					case 102: // AC Charge 2 Start Time
+					case 103: // AC Charge 2 End Time
+					case 105: // AC Charge 3 Start Time
+					case 106: // AC Charge 3 End Time
+					case 108: // AC Charge 4 Start Time
+					case 109: // AC Charge 4 End Time
+					case 111: // AC Charge 5 Start Time
+					case 112: // AC Charge 5 End Time
+					case 114: // AC Charge 6 Start Time
+					case 115: // AC Charge 6 End Time
+					case 117: // AC Charge 7 Start Time
+					case 118: // AC Charge 7 End Time
+					case 120: // AC Charge 8 Start Time
+					case 121: // AC Charge 8 End Time
+					case 123: // AC Charge 9 Start Time
+					case 124: // AC Charge 9 End Time
+					case 126: // AC Charge 10 Start Time
+					case 127: // AC Charge 10 End Time
+					case 131: // DC Discharge 3 Start Time
+					case 132: // DC Discharge 3 End Time
+					case 134: // DC Discharge 4 Start Time
+					case 135: // DC Discharge 4 End Time
+					case 137: // DC Discharge 5 Start Time
+					case 138: // DC Discharge 5 End Time
+					case 140: // DC Discharge 6 Start Time
+					case 141: // DC Discharge 6 End Time
+					case 143: // DC Discharge 7 Start Time
+					case 144: // DC Discharge 7 End Time
+					case 146: // DC Discharge 8 Start Time
+					case 147: // DC Discharge 8 End Time
+					case 149: // DC Discharge 9 Start Time
+					case 150: // DC Discharge 9 End Time
+					case 152: // DC Discharge 10 Start Time
+					case 153: // DC Discharge 10 End Time
+					case 155: // Pause Battery Start Time
+					case 156: // Pause Battery End Time
+					case 265: // Export Power Priority
+					case 384: // Discharge Start Time Slot 1
+					case 385: // Discharge End Time Slot 1
+					case 387: // Discharge Start Time Slot 2
+					case 388: // Discharge End Time Slot 2
+					case 390: // Discharge Start Time Slot 3
+					case 391: // Discharge End Time Slot 3
+					case 393: // Charge Start Time Slot 1
+					case 394: // Charge End Time Slot 1
+					case 396: // Charge Start Time Slot 2
+					case 397: // Charge End Time Slot 2
+					case 399: // Charge Start Time Slot 3
+					case 400: // Charge End Time Slot 3
+
+						value = postV1InverterSettingReadString(id);
+						break;
+
+					case 72: // Battery Charge Power
+					case 73: // Battery Discharge Power
+					default:
+						value = postV1InverterSettingReadInteger(id);
+						break;
+					}
+
+					System.out.println("response is: ");
+
+					renderInverterValue(value);
+
+				} else if ("write".equalsIgnoreCase(args[3]) && args.length > 5) {
+
+					System.out.println("write setting with id:" + id + " new value:" + args[5]);
+
+					Object value = null;
+
+					switch (id) {
+
+					case 17: // Enable AC Charge Upper % Limit
+					case 24: // Enable Eco Mode
+					case 56: // Enable DC Discharge
+					case 66: // AC Charge Enable
+					case 271: // Enable EPS
+					case 380: // Enable Plant EMS Control
+
+						Boolean bool = Boolean.parseBoolean(args[5]);
+
+						value = postV1InverterSettingWriteBoolean(id, bool);
+						break;
+
+					case 28: // AC Charge 2 Start Time
+					case 29: // AC Charge 2 End Time
+					case 41: // DC Discharge 2 Start Time
+					case 42: // DC Discharge 2 End Time
+					case 53: // DC Discharge 1 Start Time
+					case 54: // DC Discharge 1 End Time
+					case 64: // AC Charge 1 Start Time
+					case 65: // AC Charge 1 End Time
+					case 102: // AC Charge 2 Start Time
+					case 103: // AC Charge 2 End Time
+					case 105: // AC Charge 3 Start Time
+					case 106: // AC Charge 3 End Time
+					case 108: // AC Charge 4 Start Time
+					case 109: // AC Charge 4 End Time
+					case 111: // AC Charge 5 Start Time
+					case 112: // AC Charge 5 End Time
+					case 114: // AC Charge 6 Start Time
+					case 115: // AC Charge 6 End Time
+					case 117: // AC Charge 7 Start Time
+					case 118: // AC Charge 7 End Time
+					case 120: // AC Charge 8 Start Time
+					case 121: // AC Charge 8 End Time
+					case 123: // AC Charge 9 Start Time
+					case 124: // AC Charge 9 End Time
+					case 126: // AC Charge 10 Start Time
+					case 127: // AC Charge 10 End Time
+					case 131: // DC Discharge 3 Start Time
+					case 132: // DC Discharge 3 End Time
+					case 134: // DC Discharge 4 Start Time
+					case 135: // DC Discharge 4 End Time
+					case 137: // DC Discharge 5 Start Time
+					case 138: // DC Discharge 5 End Time
+					case 140: // DC Discharge 6 Start Time
+					case 141: // DC Discharge 6 End Time
+					case 143: // DC Discharge 7 Start Time
+					case 144: // DC Discharge 7 End Time
+					case 146: // DC Discharge 8 Start Time
+					case 147: // DC Discharge 8 End Time
+					case 149: // DC Discharge 9 Start Time
+					case 150: // DC Discharge 9 End Time
+					case 152: // DC Discharge 10 Start Time
+					case 153: // DC Discharge 10 End Time
+					case 155: // Pause Battery Start Time
+					case 156: // Pause Battery End Time
+					case 265: // Export Power Priority
+					case 384: // Discharge Start Time Slot 1
+					case 385: // Discharge End Time Slot 1
+					case 387: // Discharge Start Time Slot 2
+					case 388: // Discharge End Time Slot 2
+					case 390: // Discharge Start Time Slot 3
+					case 391: // Discharge End Time Slot 3
+					case 393: // Charge Start Time Slot 1
+					case 394: // Charge End Time Slot 1
+					case 396: // Charge Start Time Slot 2
+					case 397: // Charge End Time Slot 2
+					case 399: // Charge Start Time Slot 3
+					case 400: // Charge End Time Slot 3
+
+						String string = args[5];
+
+						value = postV1InverterSettingWriteString(id, string);
+						break;
+
+					case 72: // Battery Charge Power
+					case 73: // Battery Discharge Power
+
+					case 101: // AC Charge 1 Upper SOC % Limit
+					case 104: // AC Charge 2 Upper SOC % Limit
+					case 107: // AC Charge 3 Upper SOC % Limit
+					case 110: // AC Charge 4 Upper SOC % Limit
+					case 113: // AC Charge 5 Upper SOC % Limit
+					case 116: // AC Charge 6 Upper SOC % Limit
+					case 119: // AC Charge 7 Upper SOC % Limit
+					case 122: // AC Charge 8 Upper SOC % Limit
+					case 125: // AC Charge 9 Upper SOC % Limit
+					case 128: // AC Charge 10 Upper SOC % Limit
+
+					default:
+						Integer integer = Integer.parseInt(args[5]);
+
+						value = postV1InverterSettingWriteInteger(id, integer);
+						break;
+					}
+
+					System.out.println("response is: ");
+
+					renderInverterValue(value);
 				}
 			}
 		}
@@ -2377,7 +2438,55 @@ public class Icarus {
 	}
 
 	// postV1InverterSettingWrite
-	private static V1DataIntegerValue postV1InverterSettingWrite(int id, Integer value)
+	private static V1DataStringValue postV1InverterSettingWriteInt(int id, int value)
+			throws MalformedURLException, IOException, URISyntaxException {
+
+		V1DataStringValue result = null;
+
+		String bodyValue = "{\"value\": " + value + ", " + context + "}";
+
+		int count = 0;
+
+		do {
+
+			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
+					+ String.valueOf(id) + "/write"), "inverter", bodyValue);
+
+			if (null == json || 0 == json.trim().length()) {
+
+				System.err.println("Error obtaining data. Check the token in property file!");
+
+				result = new V1DataStringValue(); // empty object
+
+			} else {
+
+				result = mapper.readValue(json, V1DataStringValue.class);
+			}
+
+			if (result.getData().getSuccess()) {
+
+				break;
+			}
+
+			System.err.println(count + "\t" + result.getData().getSuccess() + "\t" + result.getData().getMessage()
+					+ "\t" + result.getData().getValue());
+
+			try {
+				Thread.sleep(5000L);
+
+			} catch (InterruptedException e) {
+
+				e.printStackTrace();
+			}
+
+		} while (++count < 5);
+
+		return result;
+
+	}
+
+	// postV1InverterSettingWrite
+	private static V1DataIntegerValue postV1InverterSettingWriteInteger(int id, Integer value)
 			throws MalformedURLException, IOException, URISyntaxException {
 
 		V1DataIntegerValue result = null;
