@@ -1,4 +1,4 @@
-package uk.co.myzen.a_z.json.forecast.solar;
+package uk.co.myzen.hsp.json.forecast.solar;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

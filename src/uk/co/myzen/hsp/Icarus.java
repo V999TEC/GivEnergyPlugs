@@ -1,4 +1,4 @@
-package uk.co.myzen.a_z;
+package uk.co.myzen.hsp;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -42,11 +42,11 @@ import internal.InternalGridData;
 import internal.InternalGridDataPoint;
 import internal.InternalLogData;
 import internal.InternalLogDataEvent;
-import uk.co.myzen.a_z.json.forecast.solar.ResultMessage;
-import uk.co.myzen.a_z.json.forecast.solar.SolarMessage;
-import uk.co.myzen.a_z.json.forecast.solar.SolarResult;
-import uk.co.myzen.a_z.json.sunrise.sunset.DayResult;
-import uk.co.myzen.a_z.json.sunrise.sunset.ResultsStatus;
+import uk.co.myzen.hsp.json.forecast.solar.ResultMessage;
+import uk.co.myzen.hsp.json.forecast.solar.SolarMessage;
+import uk.co.myzen.hsp.json.forecast.solar.SolarResult;
+import uk.co.myzen.hsp.json.sunrise.sunset.DayResult;
+import uk.co.myzen.hsp.json.sunrise.sunset.ResultsStatus;
 import v1.V1BatteryData;
 import v1.V1ChargeDischarge;
 import v1.V1CommunicationDevice;
@@ -142,6 +142,8 @@ public class Icarus {
 
 	private static int exitStatus = 0;
 
+	static boolean enhance = false;
+
 	private static boolean loadProperties(File externalPropertyFile) throws Exception {
 
 		boolean external = false;
@@ -171,7 +173,24 @@ public class Icarus {
 		return external;
 	}
 
+	public static boolean isNumeric(String s) {
+
+		boolean result = false;
+
+		try {
+			Integer.parseInt(s);
+			result = true;
+
+		} catch (NumberFormatException e) {
+
+		}
+
+		return result;
+	}
+
 	public static void main(String[] args) {
+
+		boolean quiet = false;
 
 		mapper = new ObjectMapper();
 
@@ -189,6 +208,7 @@ public class Icarus {
 			String p2 = null;
 			String p3 = null;
 			String p4 = null;
+			String p5 = null;
 
 			OffsetDateTime from = null;
 			OffsetDateTime to = null;
@@ -251,7 +271,40 @@ public class Icarus {
 
 									p4 = args[4].trim();
 
-									pageSize = Integer.parseInt(p4);
+									if (isNumeric(p4)) {
+
+										pageSize = Integer.parseInt(p4);
+
+										if (args.length > 5) {
+
+											p5 = args[5].trim();
+
+											if (!isNumeric(p5)) {
+
+												// assume p5 is an indicator such as "quiet" or "q"
+
+												quiet = true;
+											}
+										}
+
+									} else {
+
+										quiet = true;
+
+										// assume p4 is an indicator such as "quiet" or "q"
+
+										// which may optionally be followed with a page size in p5
+
+										if (args.length > 5) {
+
+											p5 = args[5].trim();
+
+											if (isNumeric(p5)) {
+
+												pageSize = Integer.parseInt(p5);
+											}
+										}
+									}
 								}
 							}
 						}
@@ -264,6 +317,8 @@ public class Icarus {
 //			System.err.println("propertyFileName:" + propertyFileName);
 
 			loadProperties(externalProperties);
+
+			enhance = "enhance!".equals(properties.getProperty("TEST"));
 
 			forecastSolar = properties.getProperty(KEY_FORECAST_SOLAR, DEFAULT_FORECAST_SOLAR_PROPERTY).trim();
 
@@ -462,7 +517,7 @@ public class Icarus {
 
 				if (properties.containsKey(alias)) {
 
-					smartDevice(alias, from, to, ourZoneId);
+					smartDevice(alias, from, to, ourZoneId, quiet);
 
 				} else {
 
@@ -522,8 +577,8 @@ public class Icarus {
 		System.out.println(bodyValue);
 	}
 
-	private static void smartDevice(String alias, OffsetDateTime from, OffsetDateTime to, ZoneId ourZoneId)
-			throws MalformedURLException, IOException, InterruptedException {
+	private static void smartDevice(String alias, OffsetDateTime from, OffsetDateTime to, ZoneId ourZoneId,
+			boolean quiet) throws MalformedURLException, IOException, InterruptedException {
 		List<V1TimeAndPower> cacheNewestFirst = null;
 
 		String uuid = properties.getProperty(alias);
@@ -699,7 +754,7 @@ public class Icarus {
 
 		} else {
 
-			processDeviceDataByAlias(alias, from, to, ourZoneId, cacheNewestFirst, false);
+			processDeviceDataByAlias(alias, from, to, ourZoneId, cacheNewestFirst, quiet);
 		}
 
 	}
@@ -1001,6 +1056,25 @@ public class Icarus {
 						// macro A HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
+							// AC
+							// Charge
+							// 1
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(64, args.length < 5 ? "00:00" : args[4]);
 						// AC
 						// Charge
@@ -1009,15 +1083,34 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
-						// AC
-						// Charge
-						// 1
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(65, args.length < 6 ? "00:00" : args[5]);
+							// AC
+							// Charge
+							// 1
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(101, soc); // AC Charge 1 Upper
 																	// SOC %
@@ -1031,6 +1124,25 @@ public class Icarus {
 
 						// 28 & 29 or 102 & 103
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
+							// AC
+							// Charge
+							// 2
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(102, args.length < 5 ? "00:00" : args[4]);
 						// AC
 						// Charge
@@ -1039,15 +1151,34 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
-						// AC
-						// Charge
-						// 2
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(103, args.length < 6 ? "00:00" : args[5]);
+							// AC
+							// Charge
+							// 2
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(104, soc); // AC Charge 2 Upper
 																	// SOC %
@@ -1059,6 +1190,24 @@ public class Icarus {
 						// macro B HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 3
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(105, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 3
@@ -1066,14 +1215,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 3
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(106, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 3
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(107, soc); // AC Charge 3 Upper
 																	// SOC %
@@ -1087,6 +1255,24 @@ public class Icarus {
 
 						// 28 & 29 or 102 & 103
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 4
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(108, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 4
@@ -1094,14 +1280,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 4
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(109, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 4
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(110, soc); // AC Charge 4 Upper
 																	// SOC %
@@ -1113,6 +1318,24 @@ public class Icarus {
 						// macro B HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 5
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(111, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 5
@@ -1120,14 +1343,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 5
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(112, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 5
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(113, soc); // AC Charge 5 Upper
 																	// SOC %
@@ -1138,6 +1380,24 @@ public class Icarus {
 						// macro F HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 6
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(114, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 6
@@ -1145,14 +1405,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 6
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(115, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 6
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(116, soc); // AC Charge 6 Upper
 																	// SOC %
@@ -1163,6 +1442,24 @@ public class Icarus {
 						// macro G HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 7
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(117, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 7
@@ -1170,14 +1467,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 7
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(118, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 7
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(119, soc); // AC Charge 7 Upper
 																	// SOC %
@@ -1188,6 +1504,24 @@ public class Icarus {
 						// macro H HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 8
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(120, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 8
@@ -1195,14 +1529,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 8
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(121, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 8
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(122, soc); // AC Charge 8 Upper
 																	// SOC %
@@ -1213,6 +1566,24 @@ public class Icarus {
 						// macro I HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 9
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(123, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 9
@@ -1220,14 +1591,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 9
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(124, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 9
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(125, soc); // AC Charge 9 Upper
 																	// SOC %
@@ -1238,6 +1628,24 @@ public class Icarus {
 						// macro J HH:mm HH:mm 0-100
 						// set start time, end time and SoC of timed battery charge
 
+						if (enhance) {
+
+							postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 10
+							// End
+							// Time or
+							// midnight
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}
+
 						postV1InverterSettingWriteString(126, args.length < 5 ? "00:00" : args[4]); // AC
 						// Charge
 						// 10
@@ -1245,14 +1653,33 @@ public class Icarus {
 						// Time or
 						// midnight
 
-						postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
-						// Charge
-						// 10
-						// End
-						// Time or
-						// midnight
+						if (!enhance) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							postV1InverterSettingWriteString(127, args.length < 6 ? "00:00" : args[5]); // AC
+							// Charge
+							// 10
+							// End
+							// Time or
+							// midnight
+						}
 
 						if (soc > -1) {
+
+							try {
+								Thread.sleep(2000L);
+
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 
 							postV1InverterSettingWrite(128, soc); // AC Charge 10 Upper
 																	// SOC %

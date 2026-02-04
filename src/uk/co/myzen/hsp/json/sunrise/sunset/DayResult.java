@@ -1,4 +1,4 @@
-package uk.co.myzen.a_z.json.sunrise.sunset;
+package uk.co.myzen.hsp.json.sunrise.sunset;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
