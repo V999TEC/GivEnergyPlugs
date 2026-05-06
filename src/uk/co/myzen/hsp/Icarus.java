@@ -27,7 +27,10 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -45,9 +48,11 @@ import internal.InternalLogDataEvent;
 import uk.co.myzen.hsp.json.forecast.solar.ResultMessage;
 import uk.co.myzen.hsp.json.forecast.solar.SolarMessage;
 import uk.co.myzen.hsp.json.forecast.solar.SolarResult;
+import uk.co.myzen.hsp.json.local.LocalMessage;
 import uk.co.myzen.hsp.json.sunrise.sunset.DayResult;
 import uk.co.myzen.hsp.json.sunrise.sunset.ResultsStatus;
 import v1.V1BatteryData;
+import v1.V1BooleanValue;
 import v1.V1ChargeDischarge;
 import v1.V1CommunicationDevice;
 import v1.V1CommunicationDeviceData;
@@ -63,14 +68,18 @@ import v1.V1DataStringValue;
 import v1.V1DataSystem;
 import v1.V1GridData;
 import v1.V1ImportExport;
+import v1.V1IntegerValue;
 import v1.V1Inverter;
 import v1.V1Links;
+import v1.V1MeterData;
 import v1.V1Meters;
 import v1.V1Notification;
 import v1.V1Power;
 import v1.V1SmartDevice;
 import v1.V1SmartDeviceData;
 import v1.V1SmartDevices;
+import v1.V1SolarData;
+import v1.V1StringValue;
 import v1.V1SystemData;
 import v1.V1TimeAndPower;
 
@@ -78,6 +87,39 @@ public class Icarus {
 
 	@SuppressWarnings("unused")
 	private static final String docsUrl = "https://api.givenergy.cloud/docs/api/v1";
+
+	static boolean enhance = false;
+
+	static boolean local = false;
+	//
+
+	private static Map<String, String> sensors = new HashMap<String, String>();
+
+	private static final String EPS_POWER = "EPS_POWER";
+	private static final String INVERTER_OUTPUT_FREQUENCY = "INVERTER_OUTPUT_FREQUENCY";
+	private static final String GRID_VOLTAGE = "GRID_VOLTAGE";
+	private static final String LIBERTY_POWER = "LIBERTY_POWER";
+	private static final String INVERTOR_POWER = "INVERTOR_POWER";
+	private static final String INVERTOR_TEMPERATURE = "INVERTOR_TEMPERATURE";
+	private static final String SOC = "SOC";
+	private static final String BATTERY_STACK_1_BMS_TEMPERATURE = "BATTERY_STACK_1_BMS_TEMPERATURE";
+	private static final String BATTERY_CHARGE_ENERGY_TODAY_KWH = "BATTERY_CHARGE_ENERGY_TODAY_KWH";
+	private static final String BATTERY_DISCHARGE_ENERGY_TODAY_KWH = "BATTERY_DISCHARGE_ENERGY_TODAY_KWH";
+	private static final String BATTERY_POWER = "BATTERY_POWER";
+	private static final String BATTERY_THOUGHPUT_TODAY_KWH = "BATTERY_THOUGHPUT_TODAY_KWH";
+	private static final String AC_CHARGE_ENERGY_TODAY_KWH = "AC_CHARGE_ENERGY_TODAY_KWH";
+	private static final String PV_ENERGY_TODAY_KWH = "PV_ENERGY_TODAY_KWH";
+	private static final String IMPORT_ENERGY_TODAY_KWH = "IMPORT_ENERGY_TODAY_KWH";
+	private static final String EXPORT_ENERGY_TODAY_KWH = "EXPORT_ENERGY_TODAY_KWH";
+	private static final String AC_CHARGE_ENERGY_TOTAL_KWH = "AC_CHARGE_ENERGY_TOTAL_KWH";
+	private static final String BATTERY_CHARGE_ENERGY_TOTAL_KWH = "BATTERY_CHARGE_ENERGY_TOTAL_KWH";
+	private static final String INVERTOR_ENERGY_TOTAL_KWH = "INVERTOR_ENERGY_TOTAL_KWH";
+	private static final String TOTAL_ENERGY_KWH = "TOTAL_ENERGY_KWH";
+	private static final String IMPORT_ENERGY_TOTAL_KWH = "IMPORT_ENERGY_TOTAL_KWH";
+	private static final String EXPORT_ENERGY_TOTAL_KWH = "EXPORT_ENERGY_TOTAL_KWH";
+	private static final String PV_ENERGY_TOTAL_KWH = "PV_ENERGY_TOTAL_KWH";
+
+	//
 
 	private static final String context = "\"context\": \"icarus\"";
 
@@ -141,8 +183,6 @@ public class Icarus {
 	private static String propertyFileName = DEFAULT_PROPERTY_FILENAME;
 
 	private static int exitStatus = 0;
-
-	static boolean enhance = false;
 
 	private static boolean loadProperties(File externalPropertyFile) throws Exception {
 
@@ -231,9 +271,11 @@ public class Icarus {
 
 					alias = args[1].trim();
 
-					if ("internal".equals(alias)) {
+					if ("local".equals(alias)) {
 
 					} else if ("sun".equals(alias)) {
+
+						sun = true;
 
 					} else if (args.length > 2) {
 
@@ -320,208 +362,320 @@ public class Icarus {
 
 			enhance = "enhance!".equals(properties.getProperty("TEST"));
 
-			forecastSolar = properties.getProperty(KEY_FORECAST_SOLAR, DEFAULT_FORECAST_SOLAR_PROPERTY).trim();
+			local = null != properties.getProperty("ha");
 
-			forecastMaxAgeSeconds = properties.getProperty(KEY_FORECAST_MAX_AGE_SECONDS,
-					DEFAULT_FORECAST_MAX_AGE_SECONDS_PROPERTY);
+//			meters = "true".equals(properties.getProperty("meters"));
+//			system = "true".equals(properties.getProperty("system"));
+//			battery = "true".equals(properties.getProperty("battery"));
 
-			sunriseSunsetApi = properties.getProperty(KEY_SUNRISE_SUNSET_API, DEFAULT_SUNRISE_SUNSET_API_PROPERTY)
-					.trim();
+			if (local) {
+
+				// initialise the HA sensor entityIds
+
+				sensors = new HashMap<String, String>();
+
+				sensors.put(AC_CHARGE_ENERGY_TODAY_KWH, properties.getProperty(AC_CHARGE_ENERGY_TODAY_KWH));
+				sensors.put(AC_CHARGE_ENERGY_TOTAL_KWH, properties.getProperty(AC_CHARGE_ENERGY_TOTAL_KWH));
+				sensors.put(BATTERY_CHARGE_ENERGY_TODAY_KWH, properties.getProperty(BATTERY_CHARGE_ENERGY_TODAY_KWH));
+				sensors.put(BATTERY_CHARGE_ENERGY_TOTAL_KWH, properties.getProperty(BATTERY_CHARGE_ENERGY_TOTAL_KWH));
+				sensors.put(BATTERY_DISCHARGE_ENERGY_TODAY_KWH,
+						properties.getProperty(BATTERY_DISCHARGE_ENERGY_TODAY_KWH));
+				sensors.put(BATTERY_POWER, properties.getProperty(BATTERY_POWER));
+				sensors.put(BATTERY_STACK_1_BMS_TEMPERATURE, properties.getProperty(BATTERY_STACK_1_BMS_TEMPERATURE));
+				sensors.put(BATTERY_THOUGHPUT_TODAY_KWH, properties.getProperty(BATTERY_THOUGHPUT_TODAY_KWH));
+				sensors.put(EPS_POWER, properties.getProperty(EPS_POWER));
+				sensors.put(EXPORT_ENERGY_TODAY_KWH, properties.getProperty(EXPORT_ENERGY_TODAY_KWH));
+				sensors.put(EXPORT_ENERGY_TOTAL_KWH, properties.getProperty(EXPORT_ENERGY_TOTAL_KWH));
+				sensors.put(GRID_VOLTAGE, properties.getProperty(GRID_VOLTAGE));
+				sensors.put(IMPORT_ENERGY_TODAY_KWH, properties.getProperty(IMPORT_ENERGY_TODAY_KWH));
+				sensors.put(IMPORT_ENERGY_TOTAL_KWH, properties.getProperty(IMPORT_ENERGY_TOTAL_KWH));
+				sensors.put(INVERTER_OUTPUT_FREQUENCY, properties.getProperty(INVERTER_OUTPUT_FREQUENCY));
+				sensors.put(INVERTOR_ENERGY_TOTAL_KWH, properties.getProperty(INVERTOR_ENERGY_TOTAL_KWH));
+				sensors.put(INVERTOR_POWER, properties.getProperty(INVERTOR_POWER));
+				sensors.put(INVERTOR_TEMPERATURE, properties.getProperty(INVERTOR_TEMPERATURE));
+				sensors.put(LIBERTY_POWER, properties.getProperty(LIBERTY_POWER));
+				sensors.put(PV_ENERGY_TODAY_KWH, properties.getProperty(PV_ENERGY_TODAY_KWH));
+				sensors.put(PV_ENERGY_TOTAL_KWH, properties.getProperty(PV_ENERGY_TOTAL_KWH));
+				sensors.put(SOC, properties.getProperty(SOC));
+			}
+
+			if ("local".equals(alias)) {
+				// get the parameter following local and see if it is a property setting
+				// such as target.soc.number typically followed by a number
+
+				if ("setting".equals(args[2])) {
+
+					if (4 == args.length) {
+
+						// assume a read setting
+
+					} else if (5 == args.length) {
+
+						// assume a write integer setting
+
+						postV1InverterSettingWrite(Integer.parseInt(args[3]), Integer.parseInt(args[4]));
+
+					} else if (6 == args.length && "string".equalsIgnoreCase(args[5])) {
+
+						// assume a write string setting
+
+						postV1InverterSettingWriteString(Integer.parseInt(args[3]), args[4]);
+					}
+
+				} else if (PV_ENERGY_TODAY_KWH.equalsIgnoreCase(args[2]) || sensors.containsValue(args[2])) {
+
+					String entityId = sensors.containsValue(args[2]) ? args[2] : sensors.get(args[2]);
+
+					LocalMessage lm = getApiStates(entityId);
+
+					if (4 == args.length && ("state".equalsIgnoreCase(args[3]))) {
+
+						System.out.println(lm.getState());
+
+					} else {
+
+						renderInverterValue(lm);
+					}
+
+				} else {
+
+					// assume a webhook eg ac.charge.upper.%.limit 100
+
+					String webHookId = properties.getProperty(args[2]);
+
+					if (null == webHookId) {
+
+						System.err.println("webhook for args[2] not found");
+
+						System.exit(-1);
+					}
+
+					String parts[] = args[2].split("[.]");
+
+					if (3 == args.length) {
+
+						// assume no parameters for the chosen webhook
+
+						postApiWebHook(webHookId, "");
+
+					} else {
+
+						String lastPart = parts[parts.length - 1];
+
+						if ("time".equalsIgnoreCase(lastPart) || "mode".equalsIgnoreCase(lastPart)) {
+
+							postApiWebHook(webHookId, "\"" + args[3] + "\"");
+
+						} else {
+
+							// although number force into string value
+							postApiWebHook(webHookId, "{ \"limit\":\"" + args[3] + "\"}");
+
+						}
+					}
+				}
+
+			} else {
+
+				forecastSolar = properties.getProperty(KEY_FORECAST_SOLAR, DEFAULT_FORECAST_SOLAR_PROPERTY).trim();
+
+				forecastMaxAgeSeconds = properties.getProperty(KEY_FORECAST_MAX_AGE_SECONDS,
+						DEFAULT_FORECAST_MAX_AGE_SECONDS_PROPERTY);
+
+				sunriseSunsetApi = properties.getProperty(KEY_SUNRISE_SUNSET_API, DEFAULT_SUNRISE_SUNSET_API_PROPERTY)
+						.trim();
 
 //			System.err.println("sunriseSunsetApi:" + sunriseSunsetApi);
 
-			sunriseSunsetFilename = properties
-					.getProperty(KEY_SUNRISE_SUNSET_FILE, DEFAULT_SUNRISE_SUNSET_FILE_PROPERTY).trim();
+				sunriseSunsetFilename = properties
+						.getProperty(KEY_SUNRISE_SUNSET_FILE, DEFAULT_SUNRISE_SUNSET_FILE_PROPERTY).trim();
 
 //			System.err.println("sunriseSunsetFilename:" + sunriseSunsetFilename);
 
-			ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
+				ZoneId ourZoneId = ZoneId.of(properties.getProperty(KEY_ZONE_ID, DEFAULT_ZONE_ID_PROPERTY).trim());
 
-			if (null == alias) {
+				if (null == alias) {
 
-				for (V1SmartDevice smartDevice : getListOfSmartDevice()) {
+					for (V1SmartDevice smartDevice : getListOfSmartDevice()) {
 
-					String rawAlias = smartDevice.getAlias();
+						String rawAlias = smartDevice.getAlias();
 
-					String key = rawAlias.replace(" ", "\\ ");
+						String key = rawAlias.replace(" ", "\\ ");
 
-					System.out.println(key + "=" + smartDevice.getUuid());
-				}
+						System.out.println(key + "=" + smartDevice.getUuid());
+					}
 
-			} else if ("internal".equals(alias)) {
+				} else if (0 == "login".compareToIgnoreCase(alias)) {
 
-				getInternalInverterLog(1, 2, 100);
+					// assume username in [2] and password in [3] optionally remember in [4]
 
-			} else if (0 == "login".compareToIgnoreCase(alias)) {
+					postV1Login(args[2], args[3], args.length > 4 && 0 == "true".compareToIgnoreCase(args[4]));
 
-				// assume username in [2] and password in [3] optionally remember in [4]
+				} else if (0 == "sun".compareToIgnoreCase(alias)) {
 
-				postV1Login(args[2], args[3], args.length > 4 && 0 == "true".compareToIgnoreCase(args[4]));
+					OffsetDateTime odt = OffsetDateTime.now(ourZoneId);
 
-			} else if (0 == "sun".compareToIgnoreCase(alias)) {
+					String keyToday = odt.format(formatterYYYYMMDD); // today
 
-				OffsetDateTime odt = OffsetDateTime.now(ourZoneId);
+					ResultsStatus rs = readCachedSunriseSunset();
 
-				String keyToday = odt.format(formatterYYYYMMDD); // today
+					String solarNoon = null;
 
-				ResultsStatus rs = readCachedSunriseSunset();
+					String sunrise = "";
 
-				String solarNoon = null;
+					String sunset = "";
 
-				String sunrise = "";
+					if (null != rs) {
 
-				String sunset = "";
+						List<DayResult> results = rs.getResults();
 
-				if (null != rs) {
+						DayResult dr = getSunriseSunsetOnDay(keyToday, results);
 
-					List<DayResult> results = rs.getResults();
+						if (null != dr) {
 
-					DayResult dr = getSunriseSunsetOnDay(keyToday, results);
+							sunrise = dr.getSunrise();
+							solarNoon = dr.getSolarNoon();
+							sunset = dr.getSunset();
+						}
+					}
 
-					if (null != dr) {
+					if (null == solarNoon) {
+
+						String keyTomorrow = odt.plusDays(1l).format(formatterYYYYMMDD); // tomorrow
+
+						ResultsStatus rsTodayTomorrow = getSunriseSunset(keyToday, keyTomorrow);
+
+						cacheSunriseSunset(rsTodayTomorrow);
+
+						DayResult dr = getSunriseSunsetOnDay(keyToday, rsTodayTomorrow.getResults());
 
 						sunrise = dr.getSunrise();
 						solarNoon = dr.getSolarNoon();
 						sunset = dr.getSunset();
 					}
-				}
 
-				if (null == solarNoon) {
+					System.out.println(sunrise + "," + solarNoon + "," + sunset);
 
-					String keyTomorrow = odt.plusDays(1l).format(formatterYYYYMMDD); // tomorrow
+				} else if (forecast) {
 
-					ResultsStatus rsTodayTomorrow = getSunriseSunset(keyToday, keyTomorrow);
+					// assume solar
 
-					cacheSunriseSunset(rsTodayTomorrow);
+					try {
 
-					DayResult dr = getSunriseSunsetOnDay(keyToday, rsTodayTomorrow.getResults());
+						ZoneId utcZoneId = ZoneId.of("UTC");
 
-					sunrise = dr.getSunrise();
-					solarNoon = dr.getSolarNoon();
-					sunset = dr.getSunset();
-				}
+						ZonedDateTime zdtNow = ZonedDateTime.now(utcZoneId);
 
-				System.out.println(sunrise + "," + solarNoon + "," + sunset);
+						String key = zdtNow.format(formatterYYYYMMDD); // today
 
-			} else if (forecast) {
+						ResultMessage rm = readCachedSolarData(key);
 
-				// assume solar
+						if (null == rm) {
 
-				try {
+							// we don't seem to have a cached value for today (unusual)
 
-					ZoneId utcZoneId = ZoneId.of("UTC");
+							rm = getForecastSolar();
 
-					ZonedDateTime zdtNow = ZonedDateTime.now(utcZoneId);
+							if (null != rm) {
 
-					String key = zdtNow.format(formatterYYYYMMDD); // today
+								// we now have a value for today and tomorrow
 
-					ResultMessage rm = readCachedSolarData(key);
+								cacheSolarData(rm);
+							}
 
-					if (null == rm) {
+						} else {
 
-						// we don't seem to have a cached value for today (unusual)
+							// we have a value for today but it might have been predicted yesterday or be
+							// out of date
 
-						rm = getForecastSolar();
+							// don't try to call the API again if we have exceeded our rate limit
+							// this may be indicative of setting property forecast.max.age.seconds too low
 
-						if (null != rm) {
+							Integer remaining = rm.getMessage().getRateLimit().getRemaining();
 
-							// we now have a value for today and tomorrow
+							if (remaining > 0) {
 
-							cacheSolarData(rm);
-						}
+								// check if the cache value was forecast today and update if too old
 
-					} else {
+								String timeCached = rm.getMessage().getInfo().getTimeUTC();
 
-						// we have a value for today but it might have been predicted yesterday or be
-						// out of date
+								ZonedDateTime zdtCached = ZonedDateTime.parse(timeCached,
+										DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
-						// don't try to call the API again if we have exceeded our rate limit
-						// this may be indicative of setting property forecast.max.age.seconds too low
+								long secondsOld = zdtNow.toEpochSecond() - zdtCached.toEpochSecond();
 
-						Integer remaining = rm.getMessage().getRateLimit().getRemaining();
+								// how long ago was the solar forecast predicted ?
+								// eg more than 8 hours or yesterday
 
-						if (remaining > 0) {
+								if (secondsOld > Integer.parseInt(forecastMaxAgeSeconds)
+										|| !key.equals(timeCached.substring(0, 10))) {
 
-							// check if the cache value was forecast today and update if too old
+									// will be today's value but cached yesterday, so we can attempt to do better
+									// estimate
 
-							String timeCached = rm.getMessage().getInfo().getTimeUTC();
+									ResultMessage rm2 = getForecastSolar();
 
-							ZonedDateTime zdtCached = ZonedDateTime.parse(timeCached,
-									DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+									if (null != rm2) {
 
-							long secondsOld = zdtNow.toEpochSecond() - zdtCached.toEpochSecond();
+										// assume we have an updated value for today/tomorrow
 
-							// how long ago was the solar forecast predicted ?
-							// eg more than 8 hours or yesterday
+										cacheSolarData(rm2);
 
-							if (secondsOld > Integer.parseInt(forecastMaxAgeSeconds)
-									|| !key.equals(timeCached.substring(0, 10))) {
-
-								// will be today's value but cached yesterday, so we can attempt to do better
-								// estimate
-
-								ResultMessage rm2 = getForecastSolar();
-
-								if (null != rm2) {
-
-									// assume we have an updated value for today/tomorrow
-
-									cacheSolarData(rm2);
-
-									rm = rm2;
+										rm = rm2;
+									}
 								}
 							}
 						}
+
+						// delete yesterday's cache
+
+						String keyYesterday = zdtNow.minusDays(1L).format(formatterYYYYMMDD); // yesterday
+
+						purgeCache(keyYesterday);
+
+						// return today's value to stdout
+
+						Integer value = rm.getResult().getValue(key);
+
+						System.out.println(value);
+
+					} catch (Exception e) {
+
+						e.printStackTrace();
 					}
 
-					// delete yesterday's cache
+				} else if (sun) {
 
-					String keyYesterday = zdtNow.minusDays(1L).format(formatterYYYYMMDD); // yesterday
+				} else {
 
-					purgeCache(keyYesterday);
+					if (0 == "notification".compareTo(alias) || 0 == "inverter".compareTo(alias)) {
 
-					// return today's value to stdout
-
-					Integer value = rm.getResult().getValue(key);
-
-					System.out.println(value);
-
-				} catch (Exception e) {
-
-					e.printStackTrace();
-				}
-
-			} else if (sun) {
-
-			} else {
-
-				if (0 == "notification".compareTo(alias) || 0 == "inverter".compareTo(alias)) {
-
-					if (0 == "notification".compareTo(alias)) {
+						if (0 == "notification".compareTo(alias)) {
 
 //						String who = "SwindonIcarus";
 //						String result = postInternalDashboardData(who);
 //						System.out.println(result);
 
-						OffsetDateTime odt = OffsetDateTime.ofInstant(Instant.now(), ourZoneId);
+							OffsetDateTime odt = OffsetDateTime.ofInstant(Instant.now(), ourZoneId);
 
-						postV1Notification("The OffsetDateTime is " + odt.format(defaultDateTimeFormatter));
+							postV1Notification("The OffsetDateTime is " + odt.format(defaultDateTimeFormatter));
 
-					} else if (0 == "inverter".compareTo(alias)) {
+						} else if (0 == "inverter".compareTo(alias)) {
 
-						inverter(args);
+							inverter(args);
+						}
+
+						System.exit(exitStatus);
 					}
 
-					System.exit(exitStatus);
-				}
+					if (properties.containsKey(alias)) {
 
-				if (properties.containsKey(alias)) {
+						smartDevice(alias, from, to, ourZoneId, quiet);
 
-					smartDevice(alias, from, to, ourZoneId, quiet);
+					} else {
 
-				} else {
-
-					System.out.println("Unknown smart device " + alias);
+						System.out.println("Unknown smart device " + alias);
+					}
 				}
 			}
 
@@ -779,7 +933,31 @@ public class Icarus {
 
 			} else if ("system".equalsIgnoreCase(args[2])) {
 
-				V1SystemData dataSystemData = getV1InverterSystem().getData();
+				V1DataSystem dataSystem;
+
+				if (local) {
+
+					Set<String> entities = new HashSet<String>();
+
+					entities.add(SOC);
+					entities.add(LIBERTY_POWER);
+
+//						entities.add(BATTERY_STACK_1_BMS_TEMPERATURE);
+//						entities.add(EPS_POWER);
+//						entities.add(INVERTER_OUTPUT_FREQUENCY);
+//						entities.add(GRID_VOLTAGE);
+
+					entities.add(INVERTOR_POWER);
+					entities.add(INVERTOR_TEMPERATURE);
+
+					dataSystem = getV1InverterSystem(entities);
+
+				} else {
+
+					dataSystem = getV1InverterSystem();
+				}
+
+				V1SystemData dataSystemData = dataSystem.getData();
 
 				if (args.length > 3) {
 
@@ -934,7 +1112,40 @@ public class Icarus {
 
 			} else if ("meter".equalsIgnoreCase(args[2])) {
 
-				V1DataMeter dataMeter = getV1InverterMeter();
+				Set<String> filter = null;
+
+				if (local) {
+
+					filter = new HashSet<String>();
+
+					if ("today".equals(args[3])) {
+
+						if ("battery".equals(args[4])) {
+
+							filter.add(BATTERY_CHARGE_ENERGY_TODAY_KWH);
+							filter.add(BATTERY_DISCHARGE_ENERGY_TODAY_KWH);
+
+						} else if ("consumption".equals(args[4])) {
+
+							filter.add(BATTERY_THOUGHPUT_TODAY_KWH);
+
+						} else if ("ac_charge".equalsIgnoreCase(args[4])) {
+
+							filter.add(AC_CHARGE_ENERGY_TODAY_KWH);
+
+						} else if ("solar".equalsIgnoreCase(args[4])) {
+
+							filter.add(PV_ENERGY_TODAY_KWH);
+
+						} else if ("grid".equalsIgnoreCase(args[4])) {
+
+							filter.add(IMPORT_ENERGY_TODAY_KWH);
+							filter.add(EXPORT_ENERGY_TODAY_KWH);
+						}
+					}
+				}
+
+				V1DataMeter dataMeter = getV1InverterMeter(filter);
 
 				if (3 == args.length) {
 
@@ -2741,10 +2952,47 @@ public class Icarus {
 	private static V1DataBooleanValue postV1InverterSettingReadBoolean(int id)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-				+ String.valueOf(id) + "/read"), "inverter", body);
-
 		V1DataBooleanValue result = null;
+
+		if (local) {
+
+			String entityId = null;
+
+			switch (id) {
+
+			case 999:
+
+				entityId = properties.getProperty("dummy");
+				break;
+
+			default:
+
+				System.err.println("Not Yet Implemented for local: postV1InverterSettingReadBoolean( " + id + ")");
+				break;
+			}
+
+			if (null != entityId) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				System.err.println(id + ": getApiStates( " + entityId + ") :" + lm.getState());
+
+				result = new V1DataBooleanValue(); // empty object
+
+				V1BooleanValue data = new V1BooleanValue();
+
+				data.setSuccess(true);
+				data.setMessage("local");
+				data.setValue(Boolean.valueOf(lm.getState()));
+
+				result.setData(data);
+
+				return result;
+			}
+		}
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio") + "/settings/"
+				+ String.valueOf(id) + "/read"), "inverter", body);
 
 		if (null == json || 0 == json.trim().length()) {
 
@@ -2763,10 +3011,47 @@ public class Icarus {
 	private static V1DataIntegerValue postV1InverterSettingReadInteger(int id)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-				+ String.valueOf(id) + "/read"), "inverter", body);
-
 		V1DataIntegerValue result = null;
+
+		if (local) {
+
+			String entityId = null;
+
+			switch (id) {
+
+			case 999:
+
+				entityId = properties.getProperty("dummy");
+				break;
+
+			default:
+
+				System.err.println("Not Yet Implemented for local: postV1InverterSettingReadInteger( " + id + ")");
+				break;
+			}
+
+			if (null != entityId) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				System.err.println(id + ": getApiStates( " + entityId + ")");
+
+				result = new V1DataIntegerValue(); // empty object
+
+				V1IntegerValue data = new V1IntegerValue();
+
+				data.setSuccess(true);
+				data.setMessage("local");
+				data.setValue(Integer.parseInt(lm.getState()));
+
+				result.setData(data);
+
+				return result;
+			}
+		}
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio") + "/settings/"
+				+ String.valueOf(id) + "/read"), "inverter", body);
 
 		if (null == json || 0 == json.trim().length()) {
 
@@ -2785,10 +3070,48 @@ public class Icarus {
 	private static V1DataStringValue postV1InverterSettingReadString(int id)
 			throws MalformedURLException, IOException, URISyntaxException {
 
-		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-				+ String.valueOf(id) + "/read"), "inverter", body);
-
 		V1DataStringValue result = null;
+
+		if (local) {
+
+			String entityId = null;
+
+			switch (id) {
+
+			case 999:
+
+				entityId = properties.getProperty("dummy");
+				break;
+
+			default:
+
+				System.err.println("Not Yet Implemented for local: postV1InverterSettingReadString( " + id + ")");
+				break;
+			}
+
+			if (null != entityId) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				System.err.println(id + ": getApiStates( " + entityId + ")");
+
+				result = new V1DataStringValue(); // empty object
+
+				V1StringValue data = new V1StringValue();
+
+				data.setSuccess(true);
+				data.setMessage("local");
+				data.setValue(lm.getState());
+
+				result.setData(data);
+
+				return result;
+			}
+
+		}
+
+		String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio") + "/settings/"
+				+ String.valueOf(id) + "/read"), "inverter", body);
 
 		if (null == json || 0 == json.trim().length()) {
 
@@ -2848,14 +3171,183 @@ public class Icarus {
 
 		V1DataIntegerValue result = null;
 
+//		System.err.println("local:" + local + " postV1InverterSettingWriteString(" + id + "," + value + ")");
+
+		if (local) {
+			String webHookId = null;
+
+			String mode = null;
+
+			boolean limit = true;
+
+			switch (id) {
+
+			case 72:
+				webHookId = properties.getProperty("battery.charge.rate");
+
+				break;
+
+			case 73:
+				webHookId = properties.getProperty("battery.discharge.rate");
+
+				break;
+
+			case 96:
+				webHookId = properties.getProperty("battery.pause.mode");
+
+				limit = false;
+
+				mode = "Disabled";
+
+				switch (value) {
+				case 3:
+					mode = "PauseBoth";
+					break;
+
+				case 2:
+					mode = "PauseDischarge";
+					break;
+
+				case 1:
+					mode = "PauseCharge";
+					break;
+
+				case 0:
+				default:
+
+					break;
+				}
+
+				break;
+
+			case 101:
+				webHookId = properties.getProperty("ac.charge.1.upper.soc.%.limit");
+				break;
+
+			case 104:
+				webHookId = properties.getProperty("ac.charge.2.upper.soc.%.limit");
+				break;
+
+			case 107:
+				webHookId = properties.getProperty("ac.charge.3.upper.soc.%.limit");
+				break;
+
+			case 110:
+				webHookId = properties.getProperty("ac.charge.4.upper.soc.%.limit");
+				break;
+
+			case 113:
+				webHookId = properties.getProperty("ac.charge.5.upper.soc.%.limit");
+				break;
+
+			case 116:
+				webHookId = properties.getProperty("ac.charge.6.upper.soc.%.limit");
+				break;
+
+			case 119:
+				webHookId = properties.getProperty("ac.charge.7.upper.soc.%.limit");
+				break;
+
+			case 122:
+				webHookId = properties.getProperty("ac.charge.8.upper.soc.%.limit");
+				break;
+
+			case 125:
+				webHookId = properties.getProperty("ac.charge.9.upper.soc.%.limit");
+				break;
+
+			case 128:
+				webHookId = properties.getProperty("ac.charge.10.upper.soc.%.limit");
+				break;
+
+			case 129:
+				webHookId = properties.getProperty("dc.discharge.1.lower.soc.%.limit");
+				break;
+
+			case 130:
+				webHookId = properties.getProperty("dc.discharge.2.lower.soc.%.limit");
+				break;
+
+			case 133:
+				webHookId = properties.getProperty("dc.discharge.3.lower.soc.%.limit");
+				break;
+
+			case 136:
+				webHookId = properties.getProperty("dc.discharge.4.lower.soc.%.limit");
+				break;
+
+			case 139:
+				webHookId = properties.getProperty("dc.discharge.5.lower.soc.%.limit");
+				break;
+
+			case 142:
+				webHookId = properties.getProperty("dc.discharge.6.lower.soc.%.limit");
+				break;
+
+			case 145:
+				webHookId = properties.getProperty("dc.discharge.7.lower.soc.%.limit");
+				break;
+
+			case 148:
+				webHookId = properties.getProperty("dc.discharge.8.lower.soc.%.limit");
+				break;
+
+			case 151:
+				webHookId = properties.getProperty("dc.discharge.9.lower.soc.%.limit");
+				break;
+
+			case 154:
+				webHookId = properties.getProperty("dc.discharge.10.lower.soc.%.limit");
+				break;
+
+			default:
+
+				System.err.println(
+						"Not Yet Implemented for local: postV1InverterSettingWrite( " + id + "," + value + ")");
+				break;
+			}
+
+			if (null != webHookId) {
+
+				String body = "";
+
+				if (limit) {
+
+					body = "{\"limit\": \"" + value + "\"}";
+
+				} else if (null == mode) {
+
+					body = "\"" + value + "\"";
+
+				} else {
+
+					body = "\"" + mode + "\"";
+				}
+
+				postApiWebHook(webHookId, body);
+
+				result = new V1DataIntegerValue(); // empty object
+
+				V1IntegerValue data = new V1IntegerValue();
+
+				data.setSuccess(true);
+				data.setMessage("local");
+				data.setValue(null);
+
+				result.setData(data);
+
+				return result;
+			}
+		}
+
 		String bodyValue = "{\"value\": " + value + ", " + context + "}";
 
 		int count = 0;
 
 		do {
 
-			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-					+ String.valueOf(id) + "/write"), "inverter", bodyValue);
+			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio")
+					+ "/settings/" + String.valueOf(id) + "/write"), "inverter", bodyValue);
 
 			if (null == json || 0 == json.trim().length()) {
 
@@ -2907,14 +3399,260 @@ public class Icarus {
 
 		V1DataStringValue result = null;
 
+//		System.err.println("local:" + local + " postV1InverterSettingWriteString(" + id + "," + value + ")");
+
+		if (local) {
+
+			String webHookId = null;
+
+			switch (id) {
+
+			// A
+
+			case 64:
+				webHookId = properties.getProperty("ac.charge.1.start.time");
+				break;
+
+			case 65:
+				webHookId = properties.getProperty("ac.charge.1.end.time");
+				break;
+
+			// B
+
+			case 102:
+				webHookId = properties.getProperty("ac.charge.2.start.time");
+				break;
+
+			case 103:
+				webHookId = properties.getProperty("ac.charge.2.end.time");
+				break;
+
+			// C
+
+			case 105:
+				webHookId = properties.getProperty("ac.charge.3.start.time");
+				break;
+
+			case 106:
+				webHookId = properties.getProperty("ac.charge.3.end.time");
+				break;
+
+			// D
+
+			case 108:
+				webHookId = properties.getProperty("ac.charge.4.start.time");
+				break;
+
+			case 109:
+				webHookId = properties.getProperty("ac.charge.4.end.time");
+				break;
+
+			// E
+
+			case 111:
+				webHookId = properties.getProperty("ac.charge.5.start.time");
+				break;
+
+			case 112:
+				webHookId = properties.getProperty("ac.charge.5.end.time");
+				break;
+
+			// F
+
+			case 114:
+				webHookId = properties.getProperty("ac.charge.6.start.time");
+				break;
+
+			case 115:
+				webHookId = properties.getProperty("ac.charge.6.end.time");
+				break;
+
+			// G
+
+			case 117:
+				webHookId = properties.getProperty("ac.charge.7.start.time");
+				break;
+
+			case 118:
+				webHookId = properties.getProperty("ac.charge.7.end.time");
+				break;
+
+			// H
+
+			case 120:
+				webHookId = properties.getProperty("ac.charge.8.start.time");
+				break;
+
+			case 121:
+				webHookId = properties.getProperty("ac.charge.8.end.time");
+				break;
+
+			// I
+
+			case 123:
+				webHookId = properties.getProperty("ac.charge.9.start.time");
+				break;
+
+			case 124:
+				webHookId = properties.getProperty("ac.charge.9.end.time");
+				break;
+
+			// J
+
+			case 126:
+				webHookId = properties.getProperty("ac.charge.10.start.time");
+				break;
+
+			case 127:
+				webHookId = properties.getProperty("ac.charge.10.end.time");
+				break;
+
+			// K
+
+			case 53:
+				webHookId = properties.getProperty("dc.discharge.1.start.time");
+				break;
+
+			case 54:
+				webHookId = properties.getProperty("dc.discharge.1.end.time");
+				break;
+
+			// L
+
+			case 41:
+				webHookId = properties.getProperty("dc.discharge.2.start.time");
+				break;
+
+			case 42:
+				webHookId = properties.getProperty("dc.discharge.2.end.time");
+				break;
+
+			// M
+
+			case 131:
+				webHookId = properties.getProperty("dc.discharge.3.start.time");
+				break;
+
+			case 132:
+				webHookId = properties.getProperty("dc.discharge.3.end.time");
+				break;
+
+			// N
+
+			case 134:
+				webHookId = properties.getProperty("dc.discharge.4.start.time");
+				break;
+
+			case 135:
+				webHookId = properties.getProperty("dc.discharge.4.end.time");
+				break;
+
+			// O
+
+			case 137:
+				webHookId = properties.getProperty("dc.discharge.5.start.time");
+				break;
+
+			case 138:
+				webHookId = properties.getProperty("dc.discharge.5.end.time");
+				break;
+
+			// P
+
+			case 140:
+				webHookId = properties.getProperty("dc.discharge.6.start.time");
+				break;
+
+			case 141:
+				webHookId = properties.getProperty("dc.discharge.6.end.time");
+				break;
+
+			// Q
+
+			case 143:
+				webHookId = properties.getProperty("dc.discharge.7.start.time");
+				break;
+
+			case 144:
+				webHookId = properties.getProperty("dc.discharge.7.end.time");
+				break;
+
+			// R
+
+			case 146:
+				webHookId = properties.getProperty("dc.discharge.8.start.time");
+				break;
+
+			case 147:
+				webHookId = properties.getProperty("dc.discharge.8.end.time");
+				break;
+
+			// S
+
+			case 149:
+				webHookId = properties.getProperty("dc.discharge.9.start.time");
+				break;
+
+			case 150:
+				webHookId = properties.getProperty("dc.discharge.9.end.time");
+				break;
+
+			// T
+
+			case 152:
+				webHookId = properties.getProperty("dc.discharge.10.start.time");
+				break;
+
+			case 153:
+				webHookId = properties.getProperty("dc.discharge.10.end.time");
+				break;
+
+			//
+
+			default:
+
+				System.err.println(
+						"Not Yet Implemented for local: postV1InverterSettingWriteString(" + id + "," + value + ")");
+				break;
+			}
+
+			if (null != webHookId) {
+
+				String body = "";
+
+				if (webHookId.contains("time")) { // assume "value" HH:MM but need :00 appended
+
+					body = "\"" + value + ":00" + "\"";
+
+				} else { // assume {"limit": "value"}
+
+					body = "{ \"limit\":\"" + value + "\"}";
+				}
+
+				postApiWebHook(webHookId, body);
+
+				result = new V1DataStringValue(); // empty object
+
+				V1StringValue data = new V1StringValue();
+
+				data.setSuccess(true);
+				data.setMessage("local");
+				data.setValue(null);
+
+				result.setData(data);
+
+				return result;
+			}
+		}
+
 		String bodyValue = "{\"value\": \"" + value + "\"" + ", " + context + "}";
 
 		int count = 0;
 
 		do {
 
-			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-					+ String.valueOf(id) + "/write"), "inverter", bodyValue);
+			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio")
+					+ "/settings/" + String.valueOf(id) + "/write"), "inverter", bodyValue);
 
 			if (null == json || 0 == json.trim().length()) {
 
@@ -2953,14 +3691,56 @@ public class Icarus {
 
 		V1DataBooleanValue result = null;
 
+//		System.err.println("local:" + local + " postV1InverterSettingWriteBoolean(" + id + "," + value + ")");
+
+		if (local) {
+
+			String webHookId = null;
+
+			switch (id) {
+
+			case 999:
+
+				webHookId = "dummy";
+				break;
+
+			default:
+
+				System.err.println(
+						"Not Yet Implemented for local: postV1InverterSettingWriteBoolean( " + id + "," + value + ")");
+				break;
+			}
+
+			if (null != webHookId) {
+
+				String body = "";
+
+				body = "{ \"limit\":\"" + value + "\"}";
+
+				postApiWebHook(webHookId, body);
+
+				result = new V1DataBooleanValue(); // empty object
+
+				V1BooleanValue data = new V1BooleanValue();
+
+				data.setSuccess(true);
+				data.setMessage("local");
+				data.setValue(null);
+
+				result.setData(data);
+
+				return result;
+			}
+		}
+
 		String bodyValue = "{\"value\": " + value + ", " + context + "}";
 
 		int count = 0;
 
 		do {
 
-			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings/"
-					+ String.valueOf(id) + "/write"), "inverter", bodyValue);
+			String json = postRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio")
+					+ "/settings/" + String.valueOf(id) + "/write"), "inverter", bodyValue);
 
 			if (null == json || 0 == json.trim().length()) {
 
@@ -2996,7 +3776,7 @@ public class Icarus {
 
 	private static V1DataSettings getV1InverterSettings() throws MalformedURLException, IOException {
 
-		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/settings"),
+		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio") + "/settings"),
 				"inverter");
 
 		V1DataSettings result = null;
@@ -3019,8 +3799,8 @@ public class Icarus {
 	private static V1DataDescriptor getV1InverterPresets(Integer page, Integer pageSize)
 			throws MalformedURLException, IOException {
 
-		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/presets?page="
-				+ (null == page ? "1" : String.valueOf(page)) + "&pageSize="
+		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio")
+				+ "/presets?page=" + (null == page ? "1" : String.valueOf(page)) + "&pageSize="
 				+ (null == pageSize ? DEFAULT_PAGE_SIZE : String.valueOf(pageSize))), "inverter");
 
 		V1DataDescriptor result = null;
@@ -3043,7 +3823,7 @@ public class Icarus {
 //	private static InternalData getInternalInverterDailyData(String dateYYYYMMDD)
 //			throws MalformedURLException, IOException {
 //
-//		String json = getRequest(new URL(baseInternalUrl + "/inverter/data/" + properties.getProperty("serial") + "/"
+//		String json = getRequest(new URL(baseInternalUrl + "/inverter/data/" + properties.getProperty("serial.aio") + "/"
 //				+ dateYYYYMMDD + "?daily=true"), "inverter");
 //
 //		InternalData result = null;
@@ -3066,7 +3846,7 @@ public class Icarus {
 //	private static Object getInternalInverterPresets() throws MalformedURLException, IOException {
 //
 //		String json = getRequest(
-//				new URL(baseInternalUrl + "/inverter/" + properties.getProperty("serial") + "/presets"), "inverter");
+//				new URL(baseInternalUrl + "/inverter/" + properties.getProperty("serial.aio") + "/presets"), "inverter");
 //
 //		return json;
 //	}
@@ -3077,7 +3857,7 @@ public class Icarus {
 		InternalLogData result = new InternalLogData();
 
 		String bodyValue = "{\"search\":\"\",\"filter_errors\":true,\"filter_same_value_responses\":true,\"server_user\":0,\"read_write\":0,\"inverter_serial\":\""
-				+ properties.getProperty("serial") + "\"}";
+				+ properties.getProperty("serial.aio") + "\"}";
 
 		List<InternalLogDataEvent> logDataEvents = new ArrayList<InternalLogDataEvent>();
 
@@ -3131,10 +3911,192 @@ public class Icarus {
 
 	private static V1DataSystem getV1InverterSystem() throws MalformedURLException, IOException {
 
-		String json = getRequest(
-				new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/system-data/latest"), "inverter");
+		return getV1InverterSystem(null);
+	}
+
+	private static V1DataSystem getV1InverterSystem(Set<String> entities) throws MalformedURLException, IOException {
 
 		V1DataSystem result = null;
+
+		if (local) {
+
+//			String entityIdAIO = "sensor.givtcp2_" + properties.getProperty("serial.aio") + "_";
+//
+//			String entityIdGW = "sensor.givtcp_" + properties.getProperty("serial.gw") + "_";
+
+			result = new V1DataSystem();
+
+			V1SystemData data = new V1SystemData();
+
+			V1BatteryData battery = new V1BatteryData();
+
+			Integer percent = 0;
+			Integer power = 0;
+			Float temperature = 0f;
+
+			String entityId = SOC;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					percent = Integer.parseInt(lm.getState());
+				}
+			}
+
+//			entityId = BATTERY_STACK_1_STACK_POWER;
+			entityId = LIBERTY_POWER;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					Float f = Float.parseFloat(lm.getState());
+
+					power = f.intValue();
+				}
+			}
+
+			entityId = BATTERY_STACK_1_BMS_TEMPERATURE;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					temperature = Float.parseFloat(lm.getState());
+				}
+			}
+
+			battery.setPercent(percent);
+			battery.setPower(power);
+			battery.setTemperature(temperature);
+
+			data.setBattery(battery);
+
+			Integer consumption = 0;
+
+			data.setConsumption(consumption);
+
+			V1GridData grid = new V1GridData();
+
+			data.setGrid(grid);
+
+			V1Inverter inverter = new V1Inverter();
+
+			Integer epsPower = 0;
+			Float outputFrequency = 0f;
+			Float outputVoltage = 0f;
+			Integer powerInverter = 0;
+			Float temperatureInverter = 0f;
+
+			entityId = INVERTOR_TEMPERATURE;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					temperature = Float.parseFloat(lm.getState());
+				}
+			}
+
+			entityId = EPS_POWER;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					epsPower = Integer.parseInt(lm.getState());
+				}
+			}
+
+			entityId = INVERTER_OUTPUT_FREQUENCY;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					outputFrequency = Float.parseFloat(lm.getState());
+				}
+			}
+
+			entityId = GRID_VOLTAGE;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					outputVoltage = Float.parseFloat(lm.getState());
+				}
+			}
+
+			entityId = INVERTOR_POWER;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					powerInverter = Integer.parseInt(lm.getState());
+				}
+			}
+
+			entityId = INVERTOR_TEMPERATURE;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					temperatureInverter = Float.parseFloat(lm.getState());
+				}
+			}
+
+			inverter.setEpsPower(epsPower); // eps_power
+
+			inverter.setOutputFrequency(outputFrequency); // inverter_output_frequency
+
+			inverter.setOutputVoltage(outputVoltage); // grid_voltage
+
+			inverter.setPower(powerInverter); // invertor_power
+
+			inverter.setTemperature(temperatureInverter); // invertor_temperature
+
+			data.setInverter(inverter);
+
+			V1SolarData solar = new V1SolarData();
+
+			data.setSolar(solar);
+
+			String status = "";
+			data.setStatus(status);
+
+			String time = "";
+			data.setTime(time);
+
+			result.setData(data);
+
+			return result;
+		}
+
+		String json = getRequest(
+				new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio") + "/system-data/latest"),
+				"inverter");
 
 		if (null == json || 0 == json.trim().length()) {
 
@@ -3155,7 +4117,7 @@ public class Icarus {
 
 		String result;
 
-		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/events"),
+		String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio") + "/events"),
 				"inverter");
 
 //		V1DataMeter result = null;
@@ -3196,8 +4158,9 @@ public class Icarus {
 
 			page++;
 
-			String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/data-points/"
-					+ date + "T00:00:00Z?page=" + page + "&pageSize=" + String.valueOf(pageSize)), "inverter");
+			String json = getRequest(new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio")
+					+ "/data-points/" + date + "T00:00:00Z?page=" + page + "&pageSize=" + String.valueOf(pageSize)),
+					"inverter");
 
 			someMoreDataPoints = new V1DataPoints();
 
@@ -3234,10 +4197,219 @@ public class Icarus {
 
 	private static V1DataMeter getV1InverterMeter() throws MalformedURLException, IOException {
 
-		String json = getRequest(
-				new URL(baseUrl + "/inverter/" + properties.getProperty("serial") + "/meter-data/latest"), "inverter");
+		V1DataMeter result = getV1InverterMeter(null); // implies get all entities
+
+		return result;
+	}
+
+	private static V1DataMeter getV1InverterMeter(Set<String> entities) throws MalformedURLException, IOException {
 
 		V1DataMeter result = null;
+
+		if (local) {
+
+			result = new V1DataMeter();
+
+			V1MeterData data = new V1MeterData();
+
+			V1Meters today = new V1Meters();
+			V1Meters total = new V1Meters();
+
+			V1ChargeDischarge batteryToday = new V1ChargeDischarge();
+			V1ChargeDischarge batteryTotal = new V1ChargeDischarge();
+
+			V1ImportExport gridToday = new V1ImportExport();
+			V1ImportExport gridTotal = new V1ImportExport();
+
+			String entityId = AC_CHARGE_ENERGY_TODAY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					today.setAcCharge(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = BATTERY_CHARGE_ENERGY_TODAY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					batteryToday.setCharge(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = BATTERY_DISCHARGE_ENERGY_TODAY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					batteryToday.setDischarge(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = BATTERY_THOUGHPUT_TODAY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					today.setConsumption(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = IMPORT_ENERGY_TODAY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					gridToday.setImp(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = EXPORT_ENERGY_TODAY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					gridToday.setExport(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = PV_ENERGY_TODAY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					today.setSolar(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = AC_CHARGE_ENERGY_TOTAL_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					total.setAcCharge(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = BATTERY_CHARGE_ENERGY_TOTAL_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					batteryTotal.setCharge(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = INVERTOR_ENERGY_TOTAL_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					batteryTotal.setDischarge(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = TOTAL_ENERGY_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					total.setConsumption(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = IMPORT_ENERGY_TOTAL_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					gridTotal.setImp(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = EXPORT_ENERGY_TOTAL_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					gridTotal.setExport(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			entityId = PV_ENERGY_TOTAL_KWH;
+
+			if (null == entities || entities.contains(entityId)) {
+
+				LocalMessage lm = getApiStates(sensors.get(entityId));
+
+				if (null != lm.getEntityId()) {
+
+					total.setSolar(Float.parseFloat(lm.getState()));
+				}
+			}
+
+			today.setBattery(batteryToday);
+			today.setGrid(gridToday);
+
+			data.setToday(today);
+
+			total.setBattery(batteryTotal);
+			total.setGrid(gridTotal);
+
+			data.setTotal(total);
+
+			data.setTime("");
+			data.setIsMetered(true);
+
+			result.setData(data);
+
+			return result;
+		}
+
+		String json = getRequest(
+				new URL(baseUrl + "/inverter/" + properties.getProperty("serial.aio") + "/meter-data/latest"),
+				"inverter");
 
 		if (null == json || 0 == json.trim().length()) {
 
@@ -3273,88 +4445,96 @@ public class Icarus {
 	 * throws IOException if token has expired or is invalid
 	 * 
 	 */
-	private static String verifiedBearerToken(String tokenKey) throws IOException {
+	private static String verifiedBearerToken(String tokenKey, boolean verify) throws IOException {
 
 		String tokenValue = properties.getProperty(tokenKey);
 
-		if (null == tokenValue) {
+		if (verify) {
 
-			throw new IOException("no property value for tokenKey " + tokenKey);
+			if (null == tokenValue) {
+
+				throw new IOException("no property value for tokenKey " + tokenKey);
+			}
+
+			String[] chunks = tokenValue.split("\\.");
+
+			if (3 != chunks.length) {
+
+				throw new IOException("property value for tokenKey " + tokenKey
+						+ " does not appear to be in format header.payload.signature");
+			}
+
+			Base64.Decoder decoder = Base64.getUrlDecoder();
+
+			String payload = new String(decoder.decode(chunks[1]));
+
+			int p = 6 + payload.indexOf("\"exp\":");
+
+			int q = payload.indexOf(",", p);
+
+			String timestamp = payload.substring(p, q);
+
+			int r = 9 + payload.indexOf("\"scopes\":", q);
+
+			int s = 1 + payload.indexOf("]", q);
+
+			String scopes = payload.substring(r, s);
+
+			Float f = Float.valueOf(timestamp);
+
+			long l = 1000L * f.longValue();
+
+			Date timeWhen = new Date(l);
+
+			Date now = new Date();
+
+			boolean expired = now.after(timeWhen);
+
+			String text = (expired ? "EXCEPTION" : "INFO") + ": Property key '" + tokenKey
+					+ "' containing JWT token for " + scopes + " " + (expired ? "has expired" : "will expire") + " "
+					+ timeWhen.toString();
+
+			System.err.print(text);
+
+			if (expired) {
+
+				throw new IOException(text);
+			}
 		}
-
-		String[] chunks = tokenValue.split("\\.");
-
-		if (3 != chunks.length) {
-
-			throw new IOException("property value for tokenKey " + tokenKey
-					+ " does not appear to be in format header.payload.signature");
-		}
-
-		Base64.Decoder decoder = Base64.getUrlDecoder();
-
-		String payload = new String(decoder.decode(chunks[1]));
-
-		int p = 6 + payload.indexOf("\"exp\":");
-
-		int q = payload.indexOf(",", p);
-
-		String timestamp = payload.substring(p, q);
-
-		int r = 9 + payload.indexOf("\"scopes\":", q);
-
-		int s = 1 + payload.indexOf("]", q);
-
-		String scopes = payload.substring(r, s);
-
-		Float f = Float.valueOf(timestamp);
-
-		long l = 1000L * f.longValue();
-
-		Date timeWhen = new Date(l);
-
-		Date now = new Date();
-
-		boolean expired = now.after(timeWhen);
-
-		String text = (expired ? "EXCEPTION" : "INFO") + ": Property key '" + tokenKey + "' containing JWT token for "
-				+ scopes + " " + (expired ? "has expired" : "will expire") + " " + timeWhen.toString();
-
-		System.err.print(text);
-
-		if (expired) {
-
-			throw new IOException(text);
-		}
-
 		return tokenValue;
 	}
 
-//	private String getRequest(URL url) throws IOException {
-//
-//		return getRequest(url, true);
-//	}
+	private static String getRequest(URL url, String tokenKey, boolean plain) throws IOException {
 
-//	private static String getRequest(URL url, boolean authorisationRequired) throws IOException {
-//
-//		return getRequest(url, authorisationRequired, null, false);
-//	}
+		return getRequest(url, true, tokenKey, false, false); // not JWT
+	}
 
 	private static String getRequest(URL url, String tokenKey) throws IOException {
 
-		return getRequest(url, true, tokenKey, false);
+		return getRequest(url, true, tokenKey, false, true);
 	}
 
 	private static String getRequest(URL url, boolean authorisationRequired, boolean jsonRequest) throws IOException {
 
-		return getRequest(url, authorisationRequired, null, jsonRequest);
+		return getRequest(url, authorisationRequired, null, jsonRequest, true);
 	}
 
-	private static String getRequest(URL url, boolean authorisationRequired, String tokenKey, boolean jsonRequest)
-			throws IOException {
+	private static String getRequest(URL url, boolean authorisationRequired, String tokenKey, boolean jsonRequest,
+			boolean isJWT) throws IOException {
 
 		int status = 0;
 
 		HttpURLConnection con = null;
+
+		String urlString = url.toString();
+
+		String prefix = "http://" + properties.getProperty("ha");
+
+		if (!urlString.startsWith(prefix)) {
+
+			System.err.println("getRequest(" + urlString + "," + authorisationRequired + "," + tokenKey + ","
+					+ jsonRequest + "," + isJWT + ")");
+		}
 
 		con = (HttpURLConnection) url.openConnection();
 
@@ -3370,7 +4550,7 @@ public class Icarus {
 
 		if (authorisationRequired) {
 
-			con.setRequestProperty("Authorization", "Bearer " + verifiedBearerToken(tokenKey));
+			con.setRequestProperty("Authorization", "Bearer " + verifiedBearerToken(tokenKey, isJWT));
 		}
 
 		try {
@@ -3441,6 +4621,16 @@ public class Icarus {
 		int status = 0;
 
 		HttpURLConnection con = null;
+
+		String urlString = url.toString();
+
+		String prefix = "http://" + properties.getProperty("ha");
+
+		if (!urlString.startsWith(prefix)) {
+
+			System.err.println("postRequest(" + urlString + "," + authorisationRequired + "," + tokenKey + ",\n" + body
+					+ "\n" + referer);
+		}
 
 		con = (HttpURLConnection) url.openConnection();
 
@@ -3537,6 +4727,56 @@ public class Icarus {
 		String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
 
 		System.out.println(json);
+	}
+
+	private static void postApiWebHook(String webHookId, String body) {
+
+		if (local) {
+
+			try {
+
+				URL url = new URL("http://" + properties.getProperty("ha") + "/api/webhook/" + webHookId);
+
+				postRequest(url, true, "", body, null);
+
+			} catch (Exception e) {
+
+				e.printStackTrace();
+
+			}
+		}
+	}
+
+	private static LocalMessage getApiStates(String entityId) {
+
+		LocalMessage result = null;
+
+		if (local) {
+
+			try {
+
+				URL url = new URL("http://" + properties.getProperty("ha") + "/api/states/sensor." + entityId);
+
+				String json = getRequest(url, "bearer", true);
+
+				if (null == json || 0 == json.trim().length()) {
+
+					result = new LocalMessage();// empty object
+
+				} else {
+
+					result = mapper.readValue(json, LocalMessage.class);
+				}
+
+			} catch (Exception e) {
+
+				e.printStackTrace();
+
+				result = null;
+			}
+		}
+
+		return result;
 	}
 
 	private static ResultMessage getForecastSolar() {
