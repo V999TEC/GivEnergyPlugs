@@ -3704,6 +3704,14 @@ public class Icarus {
 				webHookId = "dummy";
 				break;
 
+			case 66: // start or stop AC charge
+				webHookId = properties.getProperty(value ? "ac.charge.enable" : "ac.charge.disable");
+				break;
+
+			case 56: // start or stop DC discharge
+				webHookId = properties.getProperty(value ? "dc.discharge.enable" : "dc.discharge.disable");
+				break;
+
 			default:
 
 				System.err.println(
